@@ -1,0 +1,13 @@
+#connect at server by parameter in .env
+#SERVER_CONNECT=user@ip or name
+#SERVER_DIR=/home/.../...
+#get parameters
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+if [ -n "$SERVER_DIR" ] || [-n "$SERVER_CONNECT"]; then
+    ssh $SERVER_CONNECT "cd $SERVER_DIR && git pull && sh maintenance.sh on && docker exec -i ${SERVER_DIR##*/} composer update && docker exec -i ${SERVER_DIR##*/} yarn install --force && docker exec -i ${SERVER_DIR##*/} yarn build && docker exec -i ${SERVER_DIR##*/} bin/console cache:clear && sh maintenance.sh off"
+
+else
+    echo "parameters empty in .env, get SERVER_CONNECT and SERVER_DIR"
+fi
