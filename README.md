@@ -14,3 +14,12 @@ git and commit with auto tags for package.json
 Create Docker-compose.yml if don't exist with the actual directory and return port for http://localhost:...
 I use symfony5 docker image and port 80
 
+## updatelocaldb
+Update local db and public from distant server.
+He activate maintenace mode.
+He use .env parameters
+```bash
+SERVER_CONNECT=user@ip or name
+SERVER_DIR=/home/.../...
+```
+
