@@ -1,0 +1,44 @@
+# name of script
+echo -n "name of your script for generate deb: "
+read -r name
+echo -n "description: "
+read -r description 
+description=${description:-"No description"}
+echo -n "name of maintainer: "
+read -r main
+main=${main:-"Cadot.info"}
+echo -n "email of maintener: "
+read -r email 
+email=${email:-"shtodeb@cadot.info"}
+echo -n "version :"
+read -r version
+version=${version:-1.0.0}
+#get file
+filename=$(basename -- "$name")
+ext="${filename##*.}"
+file="${filename%.*}"
+#uniqid
+r=( $(openssl rand 100000 | sha1sum) )
+dir=generate_${r[0]:0:13}
+echo ${dir}
+#create skeleton
+mkdir ${dir}
+mkdir ${dir}/deb
+mkdir ${dir}/deb/debian
+cp ${name} ${dir}/deb/${file}
+chmod 755 ${dir}/deb/${file}
+cd ${dir}/deb/debian
+echo -e "${file} (${version}) unstable; urgency=medium\n\n  * Initial release. \n\n -- ${main} <${email}>  Sun, 14 Nov 2021 07:41:00 +0100 ">>changelog
+echo -e "Source: ${file} \nSection: admin\nPriority: optional\nMaintainer: ${main} <${email}>\nBuild-Depends: debhelper-compat (= 13)\nStandards-Version: 4.5.1\nRules-Requires-Root: no\n\nPackage: ${file}\nArchitecture: all\nDepends: ${misc:Depends}\nDescription: ${description}">>control
+echo -e "${file}_${version}_all.deb admin optional\n${file}_${version}_amd64.buildinfo admin optional">>files
+echo -e "${file} usr/bin">>install
+echo -e "#!/usr/bin/make -f\n\n%:\n	dh \$@">>rules
+mkdir source
+cd source
+echo "3.0 (native)">>format
+cd ../..
+dpkg-buildpackage -uc -us
+cd ..
+rm deb -R
+ls
+echo "Your deb is in ${dir}"
