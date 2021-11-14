@@ -3,8 +3,10 @@
 Install deb by `sudo dpkg -i ...deb`
 
 ## shtodeb
-for create deb from bash script
+For create deb from bash script
 Follow instructions
+-r option for remove directory generate and mv deb in current directory
+
 
 ## gcp 
 git and commit with auto tags for package.json
@@ -24,6 +26,15 @@ SERVER_DIR=/home/.../...
 ```
 ## server-update-yarn-composer
 Update distant by github, composer and yarn from .env and use maintenance mode
+```bash
+SERVER_CONNECT=user@ip or name
+SERVER_DIR=/home/.../...
+```
+## server-run-command
+run a command in the distant server from .env
+
+`server-run-command "ls"`
+
 ```bash
 SERVER_CONNECT=user@ip or name
 SERVER_DIR=/home/.../...

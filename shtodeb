@@ -40,5 +40,18 @@ cd ../..
 dpkg-buildpackage -uc -us
 cd ..
 rm deb -R
-ls
+# Get the options
+echo getopts
+while getopts "r" option; do
+   case $option in
+      r) # move deb,remove ex deb and remove dir
+             echo "move file in current directory and remove generate directory"
+             rm ../${file}*.deb
+             mv *_all.deb ..
+             cd ..
+             rm ${dir} -R
+         exit;
+   esac
+done
+
 echo "Your deb is in ${dir}"

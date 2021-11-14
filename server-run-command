@@ -1,0 +1,17 @@
+#connect at server by parameter in .env
+#SERVER_CONNECT=user@ip or name
+#SERVER_DIR=/home/.../...
+
+#get parameters
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+if [ -n "$SERVER_DIR" ] || [-n "$SERVER_CONNECT"]; then
+    if [ $# -eq 0 ]; then
+        echo "command between quotation mark "
+    else
+        ssh $SERVER_CONNECT "cd $SERVER_DIR && $1"
+    fi
+else
+    echo "parameters empty in .env, get SERVER_CONNECT and SERVER_DIR"
+fi
