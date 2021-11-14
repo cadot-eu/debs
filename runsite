@@ -1,4 +1,4 @@
-# run docker compose and change DIR in docker-compose by curre,t directory
+# run docker compose and change DIR in docker-compose by current directory
 result=${PWD##*/}
 if [ ! -f docker-compose.yml ]
 then
@@ -6,4 +6,6 @@ echo -e "version: '3'\nservices:\n  ${result}:\n    image: cadotinfo/symfony5\n 
 fi
 docker-compose down --remove-orphans
 docker-compose up -d
-docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}  {{(index $conf 0).HostPort}} {{end}}' $result
+port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' ${result})
+echo "http://localhost:${port}"
+
