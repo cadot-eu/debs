@@ -1,6 +1,10 @@
 # name of script
-echo -n "name of your script for generate deb: "
-read -r name
+if [ ! -z $1 ] #Check if argument for script is given
+   then name=$1
+  else 
+   echo -n "name of your script for generate deb: "
+   read -r name
+fi
 echo -n "description: "
 read -r description 
 description=${description:-"No description"}

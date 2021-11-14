@@ -39,4 +39,3 @@ run a command in the distant server from .env
 SERVER_CONNECT=user@ip or name
 SERVER_DIR=/home/.../...
 ```
-
