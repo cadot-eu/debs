@@ -5,9 +5,7 @@ Install all by `sudo dpkg -i *.deb`
 
 ## shtodeb
 For create deb from bash script
-Follow instructions
--r option for remove directory generate and mv deb in current directory
-
+`shtodeb bashFile` and Follow instructions
 
 ## gcp 
 git and commit with auto tags for package.json
