@@ -1,7 +1,7 @@
 # debs form cadot.info Factory
 
 Install deb by `sudo dpkg -i ...deb`
-Install all by `sudo dpkg -i *.deb`
+Install or update all by `sudo dpkg -i *.deb`
 
 ## shtodeb
 For create deb from bash script
