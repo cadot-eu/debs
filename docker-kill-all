@@ -1,0 +1,7 @@
+  GNU nano 5.2                  /bin/killall.sh                            
+#stop all containers:
+docker kill $(docker ps -q)
+
+#remove all containers
+docker rm $(docker ps -a -q)
+

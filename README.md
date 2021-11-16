@@ -1,6 +1,7 @@
 # debs form cadot.info Factory
 
 Install deb by `sudo dpkg -i ...deb`
+Install all by `sudo dpkg -i *.deb`
 
 ## shtodeb
 For create deb from bash script
@@ -39,3 +40,10 @@ run a command in the distant server from .env
 SERVER_CONNECT=user@ip or name
 SERVER_DIR=/home/.../...
 ```
+## docker-kill-all
+kill all docker and remove
+`docker-kill-all`
+
+## docker-kill
+kill docker and remove
+`docker-kill nameOfDocker`
