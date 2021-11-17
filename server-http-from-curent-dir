@@ -1,0 +1,2 @@
+http-server -p 8000 .
+echo "access by http://my-ip:8000"
