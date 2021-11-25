@@ -57,3 +57,8 @@ run a http server on port 8000 on current dir
 ## rotate screen
 rotate screen and touch
 `rotate-screeen`
+
+## fast and slow
+prcessor in fast or slow speed
+`fast`
+`slow`
