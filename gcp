@@ -88,4 +88,6 @@ if [[ `git status --porcelain` ]]; then
     git push
     
     #if modif
+else
+echo "no modifs ;-)"
 fi
