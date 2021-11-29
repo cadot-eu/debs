@@ -62,3 +62,7 @@ rotate screen and touch
 prcessor in fast or slow speed
 `fast`
 `slow`
+
+## updatesite
+git pull, composer and yarn install and yarn build
+`updatesite`
