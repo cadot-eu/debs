@@ -1,4 +1,4 @@
-# debs form cadot.info Factory
+# debs form cadot.info Factory.
 
 Install deb by `sudo dpkg -i ...deb`
 Install or update all by `sudo dpkg -i *.deb`
