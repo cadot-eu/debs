@@ -4,6 +4,7 @@ Install deb by `sudo dpkg -i ...deb`
 Install or update all by `sudo dpkg -i *.deb`
 
 ## shtodeb
+
 For create deb from bash script
 `shtodeb bashFile` and Follow instructions
 
