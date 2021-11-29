@@ -16,6 +16,7 @@ Create Docker-compose.yml if don't exist with the actual directory and return po
 I use symfony5 docker image and port 80
 
 ## local-update-db-public
+
 Update local db and public from distant server.
 He activate maintenace mode.
 He use .env parameters
