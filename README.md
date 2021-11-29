@@ -76,3 +76,7 @@ prcessor in fast or slow speed
 ## updatesite
 git pull, composer and yarn install and yarn build
 `updatesite`
+
+## installdebs
+run dpkg -i for all debs in this directory
+`installdebs`
