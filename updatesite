@@ -1,5 +1,14 @@
 git pull
-composer install
-yarn install --force
-yarn build
-
+result=${PWD##*/}
+echo "----maintenance on----"
+#docker exec -i $result /bin/bash ./crudmick/maintenance.sh on
+echo "----composer update----"
+docker exec -i $result composer update
+echo "----yarn install --force ----"
+docker exec -i $result yarn install --force
+echo "----yarn build----"
+docker exec -i $result yarn build
+echo "----cache clear----"
+docker exec -i $result bin/console cache:clear
+echo "----maintenance off----"
+#docker exec -i $result /bin/bash ./crudmick/maintenance.sh off
