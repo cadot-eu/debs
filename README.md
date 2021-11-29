@@ -35,6 +35,7 @@ SERVER_CONNECT=user@ip or name
 SERVER_DIR=/home/.../...
 ```
 ## server-run-command
+
 run a command in the distant server from .env
 
 `server-run-command "ls"`
