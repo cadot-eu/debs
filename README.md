@@ -28,6 +28,7 @@ SERVER_CONNECT=user@ip or name
 SERVER_DIR=/home/.../...
 ```
 ## server-update-yarn-composer
+
 Update distant by github, composer and yarn from .env and use maintenance mode
 ```bash
 SERVER_CONNECT=user@ip or name
