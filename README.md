@@ -45,18 +45,22 @@ SERVER_CONNECT=user@ip or name
 SERVER_DIR=/home/.../...
 ```
 ## docker-kill-all
+
 kill all docker and remove
 `docker-kill-all`
 
 ## docker-kill
+
 kill docker and remove
 `docker-kill nameOfDocker`
 
 ## deocker-bash
+
 enter in bash from docker, name is currrent directory /web/test ... test is the docker name
 `docker-bash`
 
 ## server-http-from-current-dir
+
 run a http server on port 8000 on current dir
 `server-http-from-current-dir`
 
