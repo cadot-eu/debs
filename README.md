@@ -8,6 +8,10 @@ Install or update all by `sudo dpkg -i *.deb`
 For create deb from bash script
 `shtodeb bashFile` and Follow instructions
 
+# dns-refresh
+for refresh dns on terminal
+`dns-refresh`
+
 ## gcp 
 
 git and commit with auto tags for package.json
