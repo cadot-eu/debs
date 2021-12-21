@@ -9,6 +9,7 @@ For create deb from bash script
 `shtodeb bashFile` and Follow instructions
 
 # dns-refresh
+
 for refresh dns on terminal
 `dns-refresh`
 
