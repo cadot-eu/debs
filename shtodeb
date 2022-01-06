@@ -1,14 +1,17 @@
 # name of script
 name=$1
-echo -n "description: "
-read -r description 
-description=${description:-"No description"}
-echo -n "name of maintainer: "
-read -r main
-main=${main:-"Cadot.info"}
-echo -n "email of maintener: "
-read -r email 
-email=${email:-"shtodeb@cadot.info"}
+#echo -n "description: "
+#read -r description 
+#description=${description:-"No description"}
+description="No description"
+#echo -n "name of maintainer: "
+#read -r main
+#main=${main:-"Cadot.eu"}
+main="Cadot.eu"
+#echo -n "email of maintener: "
+#read -r email 
+#email=${email:-"shtodeb@cadot.eu"}
+email="shtodeb@cadot.eu"
 echo -n "version :"
 read -r version
 version=${version:-1.0.0}

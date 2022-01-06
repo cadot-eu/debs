@@ -1,1 +1,2 @@
-sudo dpkg -i *.deb
+sudo chmod +x *
+sudo cp * /usr/bin/.
