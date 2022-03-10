@@ -2,7 +2,7 @@
 result=${PWD##*/}
 if [ ! -f docker-compose.yml ]
 then
-echo -e "version: '3'\nservices:\n  ${result}:\n    image: cadotinfo/symfony5\n    container_name: ${result}\n    volumes:\n      - .:/app\n    networks:\n      - web\n    restart: always\n    ports:\n      - 80\n \nnetworks:\n  web:\n    external: true" >>docker-compose.yml
+echo -e "version: '3'\nservices:\n  ${result}:\n    image: cadoteu/symfony5\n    container_name: ${result}\n    volumes:\n      - .:/app\n    networks:\n      - web\n    restart: always\n    ports:\n      - 80\n \nnetworks:\n  web:\n    external: true" >>docker-compose.yml
 fi
 docker-compose down --remove-orphans
 docker-compose up -d
