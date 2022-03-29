@@ -1,0 +1,6 @@
+optipng *.png
+optipng *.PNG
+jpegoptim *.JPG
+jpegoptim *.jpg
+jpegoptim *.jpeg
+jpegoptim *.JPEG

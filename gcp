@@ -7,7 +7,7 @@ Help()
     echo "Commit and push with automatically tags"
     echo
     echo "#major or #minor in commit is possible"
-    echo "Syntax: gcp [-h|i]"
+    echo "Syntax: gcp [-h|i|t]"
     echo "options:"
     echo "h     Print this Help."
     echo "i     set v1.0.0"
@@ -15,13 +15,16 @@ Help()
 
 
 # Get the options
-while getopts "hi" option; do
+while getopts "hit" option; do
     case $option in
         h) # display Help
             Help
         exit;;
         i) # reset
             git tag v1.0.0 && git push --tags
+        exit;;
+        t) # change tag
+            git tag v"$2" && git push --tags
         exit;;
         \?) # incorrect option
             echo "Error: Invalid option"
@@ -89,5 +92,5 @@ if [[ `git status --porcelain` ]]; then
     
     #if modif
 else
-echo "no modifs ;-)"
+    echo "no modifs ;-)"
 fi
