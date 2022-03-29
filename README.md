@@ -7,7 +7,7 @@
 | dkillall |  | kill all dockers |  |
 | dns-refresh |  | force flush the dns cache |  |
 | fast | | cpu freq at performance for best performance |  |
-| gcp | gcp "string" | git commit and push with automatic tag and add in packagae.json | gcp "patch: error of string " |
+| gcp [1][gcp] | gcp "string" | git commit and push with automatic tag and add in packagae.json | gcp "patch: error of string " |
 | gitrepairconnect | | script for repair problem connection with git ssh | |
 | image_compress | | compress and REPLACE files (png,bmp,tif,jpg & gif) image in current directory, install optipng & jpegoptim | |
 | installdebs | | copy the scripts in your /usr/bin/ for global utilisation | |
@@ -17,3 +17,5 @@
 | server-run-command | | use .env for run command in distant server | not terminated |
 | server-update-yarn-composer | | use .env for run yarn and composer update with maintenance mode | not terminated |
 | slow | | cpu frq to conservative for long time battery | |
+
+[gcp]: help by gcp -h
