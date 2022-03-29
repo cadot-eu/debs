@@ -1,5 +1,14 @@
 optipng *.png
 optipng *.PNG
+optipng *.GIF
+optipng *.gif
+optipng *.tif
+optipng *.TIF
+optipng *.tiff
+optipng *.TIFF
+optipng *.bmp
+optipng *.BMP
+
 jpegoptim *.JPG
 jpegoptim *.jpg
 jpegoptim *.jpeg
