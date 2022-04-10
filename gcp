@@ -12,7 +12,10 @@ Help()
     echo "h     Print this Help."
     echo "i     set v1.0.0"
 }
-
+# ---------------------------------------------------------------------------- #
+#                             protection contre gcp                            #
+# ---------------------------------------------------------------------------- #
+[ -f .nogcp ] && echo 'no gcp here' && exit
 
 # Get the options
 while getopts "hit" option; do
@@ -69,27 +72,27 @@ if [[ `git status --porcelain` ]]; then
     
     
     #create new tag
-#    NEW_TAG="v$VNUM1.$VNUM2.$VNUM3"
+    #    NEW_TAG="v$VNUM1.$VNUM2.$VNUM3"
     
-#    echo "Updating $VERSION to $NEW_TAG"
+    #    echo "Updating $VERSION to $NEW_TAG"
     
     #get current hash and see if it already has a tag
-#    GIT_COMMIT=`git rev-parse HEAD`
+    #    GIT_COMMIT=`git rev-parse HEAD`
     #NEEDS_TAG=`git describe --contains $GIT_COMMIT`
     
     #only tag if no tag already (would be better if the git describe command above could have a silent option)
     #if [ -z "$NEEDS_TAG" ]; then
     #    echo "Tagged with $NEW_TAG (Ignoring fatal:cannot describe - this means commit is untagged) "
-    sed -i 's/"version.*$/\"version\":\"'$VNUM1.$VNUM2.$VNUM3'\",/' package.json
-    git add .
+    [ -f package.json ] && sed -i 's/"version.*$/\"version\":\"'$VNUM1.$VNUM2.$VNUM3'\",/' package.json
+    git add ./*
     git commit -m "$1"
-#    git tag $NEW_TAG
-#    git push --tags
+    #    git tag $NEW_TAG
+    #    git push --tags
     #else
     #    echo "Already a tag on this commit"
     #fi
     git push --tags
-    git push    
+    git push
     #if modif
 else
     echo "no modifs ;-)"

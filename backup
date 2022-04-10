@@ -1,15 +1,20 @@
+function joinStrings() { local a=("${@:3}"); printf "%s" "$2${a[@]/#/$1}"; }
+
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
+base=('./node_modules/' './vendor/'  './var/'  './.git'  './public/'  './backup' './docker-compose.yml')
+exclude=$(printf " --exclude %s" "${base[@]}")
+exclude=${exclude:1}
 if  [ -n "$BACKUP_URL" ]; then
     if [ -z $BACKUP_URL ]; then
         echo "no parameters "
     else
         case "$1" in
             full )
-            duplicity full . $BACKUP_URL --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' --exclude './backup' --no-encryption ;;
+            duplicity --no-encryption full . $BACKUP_URL --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
             * )
-            duplicity incr . $BACKUP_URL --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' --exclude './backup' --no-encryption ;;
+            duplicity --no-encryption incr . $BACKUP_URL --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
         esac
         
     fi
