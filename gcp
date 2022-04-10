@@ -88,8 +88,8 @@ if [[ `git status --porcelain` ]]; then
     #else
     #    echo "Already a tag on this commit"
     #fi
-    git push
-    
+    git push --tags
+    git push    
     #if modif
 else
     echo "no modifs ;-)"
