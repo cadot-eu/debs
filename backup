@@ -1,0 +1,22 @@
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+if  [ -n "$BACKUP_URL" ]; then
+    if [ -z $BACKUP_URL ]; then
+        echo "no parameters "
+    else
+        case "$1" in
+            full )
+            duplicity full . $BACKUP_URL --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' --exclude './backup' --no-encryption ;;
+            * )
+            duplicity incr . $BACKUP_URL --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' --exclude './backup' --no-encryption ;;
+        esac
+        
+    fi
+    
+    #duplicity incr . $BACKUP_URL --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' --exclude './backup' --no-encryption --dry-run
+    
+else
+    echo "parameters empty in .env, get BACKUP_URL"
+fi
+
