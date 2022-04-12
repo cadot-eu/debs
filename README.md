@@ -17,8 +17,8 @@
 | server-run-command          | use .env for run command in distant server                                                                           | not terminated                                     |
 | server-update-yarn-composer | use .env for run yarn and composer update with maintenance mode                                                      | not terminated                                     |
 | slow                        | cpu frq to conservative for long time battery                                                                        |                                                    |
-| gac                         | git commit and add for one file                                                                                      | gac toto.txt "newfile"                             |
-| gc                          | git commit                                                                                                           | gc "new commit"                                    |
+| gac(p)                         | git commit and add for one file (add p for push)                                                                                      | gac toto.txt "newfile"                             |
+| gc(p)                          | git commit (add p for push)                                                                                                          | gc "new commit"                                    |
 | svgs_to_pngs                | convert svgs to pngs with width parameter                                                                            | svgs_to_pngs 3000                                  |
 
 [^1]: help by gcp -h
