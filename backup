@@ -1,4 +1,5 @@
-function joinStrings() { local a=("${@:3}"); printf "%s" "$2${a[@]/#/$1}"; }
+result=${PWD##*/}
+
 
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
@@ -13,6 +14,8 @@ if  [ -n "$BACKUP_URL" ]; then
         case "$1" in
             full )
             duplicity --no-encryption full . $BACKUP_URL --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
+            local )
+            duplicity --no-encryption full . file:///agarder/duplicity/$result/ --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
             * )
             duplicity --no-encryption incr . $BACKUP_URL --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
         esac
