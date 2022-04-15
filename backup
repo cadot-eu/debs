@@ -4,6 +4,9 @@ result=${PWD##*/}
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
+if [ -f .env.local ]; then
+    export $(grep -v '^#' .env.local | xargs)
+fi
 base=('./node_modules/' './vendor/'  './var/'  './.git'  './public/'  './backup' './docker-compose.yml')
 exclude=$(printf " --exclude %s" "${base[@]}")
 exclude=${exclude:1}
