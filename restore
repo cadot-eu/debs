@@ -1,6 +1,10 @@
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
+if [ -f .env.local ]; then
+    export $(grep -v '^#' .env.local | xargs)
+fi
+
 if  [ -n "$BACKUP_URL" ]; then
     if [ -z $BACKUP_URL ]; then
         echo "no parameters "
