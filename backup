@@ -16,11 +16,11 @@ if  [ -n "$BACKUP_URL" ]; then
     else
         case "$1" in
             full )
-            duplicity --no-encryption full . $BACKUP_URL --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
+            duplicity --no-encryption full . $BACKUP_URL --include './public/index.php' --include './public/uploads/.licence' --include './public/media/.licence' --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
             local )
-            duplicity --no-encryption full . file:///agarder/duplicity/$result/ --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
+            duplicity --no-encryption full . file:///agarder/duplicity/$result/ --include './public/index.php' --include './public/uploads/.licence' --include './public/media/.licence' --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
             * )
-            duplicity --no-encryption incr . $BACKUP_URL --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/' ;;
+            duplicity --no-encryption incr . $BACKUP_URL --include './public/index.php' --include './public/uploads/.licence' --include './public/media/.licence' --exclude './docker-compose.yml' --exclude './node_modules/' --exclude './vendor/' --exclude './var/' --exclude './.git' --exclude './public/'  ;;
         esac
         
     fi
