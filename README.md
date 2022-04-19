@@ -2,7 +2,7 @@
 
 | Name                        | Explanation                                                                                                          | Example                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| dbash                       | Get a bash of docker of the current name directory                                                                   | user@pc:~/web/test$ dbash enter in the docker test |
+| dbash                       | Get a bash of docker of the current name directory (default) or first parameter, second parameter for bash,sh..                                                                   | user@pc:~/web/test$ dbash enter in the docker test, dbash mariadb sh: enter in mariadb with sh |
 | dkill                       | kill the docker by the name                                                                                          | dkill test                                         |
 | dkillall                    | kill all dockers                                                                                                     |                                                    |
 | dns-refresh                 | force flush the dns cache                                                                                            |                                                    |

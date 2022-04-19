@@ -1,2 +1,4 @@
 result=${PWD##*/}
-docker exec -i -t $result /bin/bash #/bin/$2
+name=${1:-$result}    
+bash=${2:-bash}
+docker exec -i -t $name /bin/$bash 
