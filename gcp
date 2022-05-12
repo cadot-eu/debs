@@ -1,5 +1,8 @@
-
+#!/bin/bash
 if [[ `git status --porcelain` ]]; then
+    git add .
+    git commit -m "$1"
+    git submodule foreach 'git add . && gcp "update"'
     git add .
     git commit -m "$1"
     git push
