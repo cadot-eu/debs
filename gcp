@@ -1,4 +1,9 @@
-git add .
-git commit -m "$1"
-git push
-git push --tags
+
+if [[ `git status --porcelain` ]]; then
+    git add .
+    git commit -m "$1"
+    git push
+    git push --tags
+else
+    echo "no modifs ;-)"
+fi
