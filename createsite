@@ -1,0 +1,20 @@
+if [ "$1" ]; 
+  then
+    echo "----------Clonage de base"
+    git clone git@github.com:cadot-eu/base.git $1
+    cd "$1"
+    gitSubmodulesUpdate
+    gitSubmodulesInit
+    runsite
+    docker exec -it "$1" composer install && yarn install 
+    docker exec -it "$1" ./bin/console d:s:c 
+    docker exec -it "$1" ./bin/console d:f:l -n 
+    docker exec -it "$1" yarn build
+    sudo chown www-data: var -R
+    sudo chown www-data: public -R
+    gitSubmodulesOnMain
+    runsite
+    echo "----------il ne vous reste plus qu'à aller sur le localhost:... et lancer yarn watch"
+  else
+   echo "vous devez donner le répertoire de destination comme premier argument"
+fi
