@@ -4,3 +4,5 @@ docker kill $(docker ps -q)
 #remove all containers
 docker rm $(docker ps -a -q)
 
+docker network prune
+docker volume prune

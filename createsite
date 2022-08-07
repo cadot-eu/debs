@@ -1,4 +1,4 @@
-if [ "$1" ]; 
+if [ $# -lt 3 ]; 
   then
     echo "----------Clonage de base"
     git clone git@github.com:cadot-eu/base.git $1
@@ -13,8 +13,14 @@ if [ "$1" ];
     sudo chown www-data: var -R
     sudo chown www-data: public -R
     gitSubmodulesOnMain
+    git remote set-url origin "$2"
+    echo "Envoie du site sur votre git"
+    git add .
+    git commit -m "start"
+    git push
     runsite
     echo "----------il ne vous reste plus qu'à aller sur le localhost:... et lancer yarn watch"
+    echo "le site a été envoyé sur votre git"
   else
-   echo "vous devez donner le répertoire de destination comme premier argument"
+   echo "vous devez donner le répertoire de destination  et l'adresse du git (private)  de destination"
 fi
