@@ -1,8 +1,8 @@
 #stop all containers:
-docker kill $(docker ps -q)
+docker kill $(docker ps -q) 
 
 #remove all containers
 docker rm $(docker ps -a -q)
 
-docker network prune
-docker volume prune
+docker network prune  -f
+docker volume prune  -f
