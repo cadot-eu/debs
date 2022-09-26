@@ -1,0 +1,16 @@
+#!/bin/bash
+my_dir="$(dirname "$0")"
+source "$my_dir/lib.sh"
+# ---------------------------------------------------------------------------- #
+selections=(
+"PC"
+"Téléphone"
+)
+L_choice "Mettre le ttl pour " selected_choice "${selections[@]}"
+if [[ $selected_choice == 0 ]]
+then
+sudo sysctl net.ipv4.ip_default_ttl=64
+else
+sudo sysctl net.ipv4.ip_default_ttl=65
+fi
+echo "ttl mis à $(sysctl -n net.ipv4.ip_default_ttl)"
