@@ -4,7 +4,7 @@ if [ -z "--force" ]; then
     echo "Please login with ssh -t -t -c 'command' user@host"
     exit 1
 fi
-exit 
+exit 1
 if [[ `git status --porcelain` ]]; then
     # test si runtests est présent
     if [ -f runtests.sh ]; then
