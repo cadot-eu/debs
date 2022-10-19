@@ -3,10 +3,8 @@
 force=0
 if [ "$1" == "-f" ] || [ "$1" == "--force" ] || [ "$2" == "-f" ]|| [ "$2" == "--force" ]; then
     force=1
-    echo'ok'
 fi
-echo $force
-if [[ `git status --porcelain` ]]  ; then
+if [[ `git status --porcelain` ]] || force  ; then
     # test si runtests est présent
     if [ -f runtests.sh ]; then
         ./runtests
