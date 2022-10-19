@@ -3,7 +3,7 @@
 
 
 
-if [[ `git status --porcelain` ]] && [ "$1" == "-f" ]; then
+if [[ `git status --porcelain` ]] && [ "$2" == "-f" ]; then
     # test si runtests est présent
     if [ -f runtests.sh ]; then
         ./runtests
