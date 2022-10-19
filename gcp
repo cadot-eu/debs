@@ -1,5 +1,16 @@
 #!/bin/bash
+#test force command is set
+if [ -z "--force" ]; then
+    echo "Please login with ssh -t -t -c 'command' user@host"
+    exit 1
+fi
+exit 
 if [[ `git status --porcelain` ]]; then
+    # test si runtests est présent
+    if [ -f runtests.sh ]; then
+        ./runtests
+    fi
+  
     git add .
     git commit -m "$1"
     git submodule foreach "git add . && gcp '$1'"
