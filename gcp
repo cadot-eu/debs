@@ -4,7 +4,7 @@ force=0
 if [ "$1" == "-f" ] && [ "$1" == "--force" ] && [ "$2" == "-f" ] && [ "$2" == "--force" ]; then
     force=1
 fi
-if [[ `git status --porcelain` ]] && [ force ]; then
+if [[ `git status --porcelain` ]] && [ force==1 ] ; then
     # test si runtests est présent
     if [ -f runtests.sh ]; then
         ./runtests
