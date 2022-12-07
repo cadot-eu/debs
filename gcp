@@ -46,6 +46,12 @@ if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
     if [ $? -ne 0 ]; then
         echo "ERREUR DANS LES TESTS ARRET" && exit
     else
+        sudo rm git_news.json
+        echo "{" > git_news.json
+        git log --pretty=format:'"%h":{  "subject": "%s",%n  "date": "%aD"%n },'>> git_news.json  
+        echo "}" >> git_news.json 
+        sed -i 's/},}/}}/' git_news.json 
+        sudo chown www-data: git_news.json
         git add .
         git commit -m "$message"
         git submodule foreach "git add . && gcp '$message'"
