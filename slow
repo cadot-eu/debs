@@ -1,5 +1,3 @@
-sudo cpufreq-set -c 0 -g powersave
-sudo cpufreq-set -c 1 -g powersave
-sudo cpufreq-set -c 2 -g powersave
-sudo cpufreq-set -c 3 -g powersave
-
+for i in {0..7};
+do sudo cpufreq-set -c $i -g powersave;
+done;
