@@ -1,3 +1,4 @@
 git submodule deinit $1
 git rm --cached -r $1 -f
+sudo rm .git/modules/$1 -R
 sudo rm -R $1
