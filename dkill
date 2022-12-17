@@ -1,5 +1,7 @@
-if (($(docker ps -a | grep "$1" | wc -l)>0));
-  then
-    docker stop $1
-    docker rm  $1
+CONTAINER_NAME='$1'
+
+CID=$(docker ps -q -f status=running -f name=^/${CONTAINER_NAME}$)
+if [  "${CID}" ]; then
+  docker stop $1 && docker rm $1
 fi
+unset CID
