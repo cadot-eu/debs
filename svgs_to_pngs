@@ -1,5 +1,5 @@
 #parameter 1 pour width sinon 1024 par defaut
 width=${1:-1024}  
 for i in *.svg; 
-do inkscape -w "$width"  "$i" -e "${i%svg}png";
+do inkscape -w "$width"  "$i" --export-filename "${i%svg}png";
 done
