@@ -4,8 +4,8 @@ if [ ! -f docker-compose.yml ]
 then
 echo -e "version: '3'\nservices:\n  ${result}:\n    image: cadoteu/symfony5-6-runsite\n    container_name: ${result}\n    volumes:\n      - .:/app\n    restart: always\n    ports:\n      - 80\n " >>docker-compose.yml
 fi
-docker-compose down --remove-orphans
-docker-compose up -d
+docker compose down --remove-orphans
+docker compose up -d
 port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' ${result})
 echo "http://localhost:${port}"
 
