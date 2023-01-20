@@ -37,6 +37,10 @@ do
     shift
 done
 
+if [ ! -d "tests" ]; then
+     passtest=1
+fi
+
 if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
     if [ -f bin/phpunit ] && [ $passtest == 0 ] ; then
         echo "Running tests"

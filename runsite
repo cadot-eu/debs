@@ -9,3 +9,8 @@ docker compose up -d
 port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' ${result})
 echo "http://localhost:${port}"
 
+echo -e "${result}.localhost {\n    reverse_proxy localhost:${port}\n}" >Caddyfile
+
+caddy start
+google-chrome https://${result}.localhost
+
