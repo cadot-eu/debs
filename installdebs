@@ -1,4 +1,2 @@
 sudo chmod +x *
 sudo cp * /usr/bin/.
-rm ~/vendor/bash-utility -fR
-git clone https://github.com/labbots/bash-utility.git ~/vendor/bash-utility
