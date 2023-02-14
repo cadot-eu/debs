@@ -59,7 +59,7 @@ if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
         #sudo chown www-data: git_news.json
         git add .
         git commit -m "$message"
-        git submodule foreach "git add . && gcp '$message'"
+        git submodule foreach "git add . && git commit -m '$message'"
         git add .
         git commit -m "$message"
         git push
