@@ -22,3 +22,5 @@
 | svgs_to_pngs                | convert svgs to pngs with width parameter                                                                            | svgs_to_pngs 3000                                  |
 
 [^1]: help by gcp -h
+
+commit by ai
