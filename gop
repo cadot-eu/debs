@@ -51,11 +51,11 @@ if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
         echo "ERREUR DANS LES TESTS ARRET" && exit
     else
         git add .
-        oc --no-verify
-        git submodule foreach "git add . && goc "
+        oc config set description=true
+        oc 
+        git submodule foreach "git add . && oc config set description=true && goc "
         git add .
-        oc --no-verify
-        git push
+        oc 
         git push --tags
     fi
 else
