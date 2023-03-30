@@ -53,7 +53,7 @@ if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
         git add .
         oc config set description=true
         oc 
-        git submodule foreach "git add . && oc config set description=true && goc "
+        git submodule foreach "git add . && oc config set description=true && gop "
         git add .
         oc 
         git push --tags
