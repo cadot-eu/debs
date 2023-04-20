@@ -4,5 +4,5 @@ branches=$(git branch | sed 's/*//g')
 
 # Merge all branches into main
 for branch in $branches; do
-  git merge --no-ff $branch main
+  git merge --no-ff $branch main  --commit --no-edit
 done
