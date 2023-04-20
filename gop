@@ -57,6 +57,7 @@ if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
         git add .
         oc 
         git push --tags
+        git push --all
     fi
 else
     echo "no modifs ;-)"
