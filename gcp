@@ -62,7 +62,7 @@ if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
         git submodule foreach "git add . && gcp '$message'"
         git add .
         git commit -m "$message"
-        git push
+        git push --all
         git push --tags
     fi
 else
