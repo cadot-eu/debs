@@ -1,0 +1,8 @@
+#!/bin/bash
+# Get a list of all branches
+branches=$(git branch | sed 's/*//g')
+
+# Merge all branches into main
+for branch in $branches; do
+  git merge --no-ff $branch main
+done
