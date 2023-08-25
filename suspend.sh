@@ -76,7 +76,7 @@ display_help() {
     echo "--install      Installer et configurer la gestion de l'énergie et les événements ACPI."
     echo "--uninstall    Réinitialiser les configurations et supprimer les fichiers créés."
     echo "-h, --help     Afficher l'aide."
-    echo " une fois cette installation faites il est possible de lancer `sudo pm-suspend` sans taper de mot de passe, donc de créer un touche de raccouris pour lancer suspend"
+    echo " une fois cette installation faites il est possible de lancer 'sudo /usr/sbin/pm-suspend' sans taper de mot de passe, donc de créer un touche de raccouris pour lancer suspend"
 }
 
 # Contrôler les options du script
