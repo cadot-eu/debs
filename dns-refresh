@@ -1,1 +1,1 @@
-sudo systemd-resolve --flush-caches
+sudo service systemd-resolved restart
