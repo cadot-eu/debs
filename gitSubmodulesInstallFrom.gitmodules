@@ -1,43 +1,17 @@
 #!/bin/sh
-#
-# Script for updating Git submodules based on .gitmodules configuration
-#
-# This script automates the process of updating Git submodules defined in the
-# .gitmodules file. It checks for existing local submodules, deinitializes them
-# if necessary, removes them, and then adds them again with the latest
-# configuration.
-#
-# Usage: ./update_submodules.sh
-#
 
 set -e
 
-# Iterate through each submodule defined in .gitmodules
 git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
     while read path_key local_path
     do
-        if [ -d "$local_path" ]; then
-            submodule_name=$(basename "$local_path")
-            
-            # Deinitialize the submodule to avoid conflicts
-            git submodule deinit -f "$local_path"
-            
-            # Remove the local submodule directory
-            git rm -f "$local_path"
-            
-            # Retrieve the submodule's URL from .gitmodules
-            url_key=$(echo "$path_key" | sed 's/\.path/.url/')
-            url=$(git config -f .gitmodules --get "$url_key")
-            
-            # Add the submodule again with the latest configuration
-            git submodule add "$url" "$local_path"
-        fi
+        if [ -d "$local_path" ];
+           then
+        gitSubmoduleRM $local_path
+        sudo rm $local_path -R -f
+        url_key=$(echo $path_key | sed 's/\.path/.url/')
+        url=$(git config -f .gitmodules --get "$url_key")
+        git submodule add $url $local_path
+	
+           fi
     done
-
-# Usage instructions
-if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
-    echo "Usage: $0"
-    echo "This script updates Git submodules based on .gitmodules configuration."
-    echo "It deinitializes, removes, and re-adds submodules with the latest configuration."
-    exit 0
-fi
