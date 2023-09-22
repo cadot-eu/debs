@@ -7,6 +7,7 @@ git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
     do
         if [ -d "$local_path" ];
            then
+sudo rm $local_path -R -f
         gitSubmoduleRM $local_path
         fi
         sudo rm $local_path -R -f
