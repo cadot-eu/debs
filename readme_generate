@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Obtient le nom du répertoire actuel
+directory_name=$(basename "$PWD")
+
+# Crée le fichier README.md
+echo "# $directory_name" > README.md
+echo "" >> README.md
+
+# Liste les fichiers du répertoire
+for file in *; do
+  if [ -f "$file" ]; then
+    # Crée un lien interne pour le fichier
+    link_name=$(echo "$file" | sed 's/[^A-Za-z0-9._-]/-/g')
+    
+    # Ajoute le nom du fichier en tant que titre de chapitre 2
+    echo "## [$file](#$link_name)" >> README.md
+    echo "" >> README.md
+
+    # Extrayez les commentaires commençant par "*" (ignorant les commentaires multi-lignes "/*")
+    awk '/^\*\s/{if (!/^\/\*\*/){print}}' "$file" | while IFS= read -r line; do
+      # Ajoutez la ligne de commentaire en tant que titre de sous-chapitre 3
+      echo "### $line" >> README.md
+    done
+
+    echo "" >> README.md
+  fi
+done
+
+# Génère le sommaire à partir des titres des fichiers
+echo "## Sommaire" >> README.md
+echo "" >> README.md
+for file in *; do
+  if [ -f "$file" ]; then
+    link_name=$(echo "$file" | sed 's/[^A-Za-z0-9._-]/-/g')
+    echo "- [$file](#$link_name)" >> README.md
+  fi
+done
+
+echo "Fichier README.md généré avec succès."
