@@ -9,4 +9,4 @@ docker compose up -d
 port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' ${result})
 echo "https://${result}.localhost"
 
-echo -e "${result}.localhost {\n    reverse_proxy localhost:${port}\n}" >Caddyfile
+echo -e "{\nemail letsencrypt@cadot.eu\nacme_ca https://acme-staging-v02.api.letsencrypt.org/directory\n}\n\n${result}.localhost {\nencode gzip zstd\nreverse_proxy localhost:${port}\nheader {\nCache-Control "public, max-age=31536000"\n}\n}\n" >Caddyfile
