@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Vérifie si le nombre d'arguments est correct
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <nom_de_fichier>"
+    exit 1
+fi
+
+# Récupère le nom de fichier à partir des arguments
+nom_de_fichier=$1
+
+# Utilise wget avec les options spécifiées
+wget -c --content-disposition "$nom_de_fichier"
