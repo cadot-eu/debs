@@ -1,1 +1,1 @@
-sudo wg-quick down ~/Téléchargements/pcmick.conf
+sudo wg-quick down ~/pcmick.conf
