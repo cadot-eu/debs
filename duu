@@ -1,1 +1,2 @@
 du -sh ./* | sort -hr
+df -h
