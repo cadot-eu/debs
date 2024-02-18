@@ -1,1 +1,2 @@
-ebook-convert $1 $1.epub --enable-heuristics
+ebook-convert "$1" "$1".epub  --enable-heuristics --change-justification=justify --remove-first-image  --no-default-epub-cover 
+
