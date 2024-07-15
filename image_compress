@@ -1,15 +1,5 @@
-optipng *.png
-optipng *.PNG
-optipng *.GIF
-optipng *.gif
-optipng *.tif
-optipng *.TIF
-optipng *.tiff
-optipng *.TIFF
-optipng *.bmp
-optipng *.BMP
+# Optimiser les fichiers PNG, GIF, TIFF, et BMP avec optipng
+find . -type f \( -iname "*.png" -o -iname "*.PNG" -o -iname "*.gif" -o -iname "*.GIF" -o -iname "*.tif" -o -iname "*.TIF" -o -iname "*.tiff" -o -iname "*.TIFF" -o -iname "*.bmp" -o -iname "*.BMP" \) -exec optipng {} \;
 
-jpegoptim *.JPG
-jpegoptim *.jpg
-jpegoptim *.jpeg
-jpegoptim *.JPEG
+# Optimiser les fichiers JPG et JPEG avec jpegoptim
+find . -type f \( -iname "*.jpg" -o -iname "*.JPG" -o -iname "*.jpeg" -o -iname "*.JPEG" \) -exec jpegoptim {} \;
