@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Fonction pour afficher l'aide
+usage() {
+    echo "Usage: $0 [répertoire]"
+    echo
+    echo "Nettoie les noms de fichiers dans un répertoire en remplaçant les caractères spéciaux."
+    echo
+    echo "Options :"
+    echo "  -h            Affiche cette aide"
+    echo
+    echo "Si aucun répertoire n'est spécifié, le répertoire courant sera utilisé."
+    exit 0
+}
+
+# Vérifier si l'option -h est passée
+while getopts ":h" option; do
+    case $option in
+        h)
+            usage
+            ;;
+        *)
+            echo "Option invalide. Utilisez -h pour l'aide."
+            exit 1
+            ;;
+    esac
+done
+
+# Définir le répertoire à traiter
+if [ $# -eq 0 ]; then
+    dir="."
+else
+    dir="$1"
+fi
+
+# Vérifier si le répertoire existe
+if [ ! -d "$dir" ]; then
+    echo "Le répertoire spécifié n'existe pas."
+    exit 1
+fi
+
+# Fonction pour nettoyer le nom du fichier
+clean_filename() {
+    local name="$1"
+    # Convertir les caractères accentués et spéciaux en ASCII
+    name=$(echo "$name" | iconv -f utf-8 -t ascii//TRANSLIT)
+    # Remplacer les caractères restants non désirés
+    name=$(echo "$name" | sed -e 's/[^a-zA-Z0-9._-]/_/g' \
+                               -e 's/__*/_/g' \
+                               -e 's/^[-._]//g' \
+                               -e 's/[-._]$//g')
+    echo "$name"
+}
+
+# Parcourir tous les fichiers du répertoire
+find "$dir" -type f | while IFS= read -r file; do
+    filename=$(basename "$file")
+    newname=$(clean_filename "$filename")
+    
+    if [ "$filename" != "$newname" ]; then
+        newfile="$(dirname "$file")/$newname"
+        mv "$file" "$newfile"
+        echo "Renommé: $filename -> $newname"
+    fi
+done
+
+echo "Terminé."

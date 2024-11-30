@@ -1,0 +1,5 @@
+git checkout -b dev origin/dev
+git reset --hard
+git checkout master
+git merge dev
+git push

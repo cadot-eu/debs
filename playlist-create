@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Définir le répertoire à traiter
+# Si aucun répertoire n'est spécifié en argument, utiliser le répertoire courant (".")
+if [ $# -eq 0 ]; then
+    dir="."
+else
+    dir="$1"
+fi
+
+# Vérifier si le répertoire existe
+# Si le répertoire n'existe pas, afficher un message d'erreur et quitter le script
+if [ ! -d "$dir" ]; then
+    echo "Le répertoire spécifié n'existe pas."
+    exit 1
+fi
+
+# Nom du fichier de la liste de lecture à créer
+playlist_name="playlist.m3u"
+
+# Créer ou écraser la liste de lecture avec une ligne d'en-tête "#EXTM3U" pour indiquer un format de liste de lecture valide
+echo "#EXTM3U" > "$dir/$playlist_name"
+
+# Trouver tous les fichiers audio dans le répertoire spécifié
+# Les extensions de fichiers recherchées sont : mp3, m4a, ogg, wav, flac
+# Les fichiers sont triés par nom
+find "$dir" -type f \( -iname "*.mp3" -o -iname "*.m4a" -o -iname "*.ogg" -o -iname "*.wav" -o -iname "*.flac" \) | sort | while IFS= read -r file; do
+    # Obtenir le nom du fichier sans le chemin (juste le nom du fichier)
+    filename=$(basename "$file")
+    
+    # Ajouter une entrée EXTINF pour le fichier dans la liste de lecture
+    # EXTINF indique des informations sur le fichier multimédia, ici -1 signifie durée inconnue
+    echo "#EXTINF:-1,$filename" >> "$dir/$playlist_name"
+    
+    # Ajouter le chemin complet du fichier à la liste de lecture
+    echo "$file" >> "$dir/$playlist_name"
+done
+
+# Afficher un message indiquant
