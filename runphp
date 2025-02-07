@@ -6,34 +6,26 @@ result=${PWD##*/}
 # Create docker-compose.yml if it doesn't exist
 if [ ! -f docker-compose.yml ]; then
     cat > docker-compose.yml << EOF
-version: '3'
 services:
   nginx:
     image: nginx:latest
-    container_name: nginx_${result}
+    container_name: nginx${result}
     ports:
       - "80"
     volumes:
-      - "./${result}:/var/www/html"
+      - "./:/var/www/html"
       - "./nginx.conf:/etc/nginx/conf.d/default.conf"
     restart: unless-stopped
     depends_on:
       - php
-    networks:
-      - caddy
 
   php:
-    container_name: php_${result}
+    container_name: ${result}
     image: php:8.2-fpm
     volumes:
-      - "./${result}:/var/www/html"
-    networks:
-      - caddy
+      - "./:/var/www/html"
     restart: unless-stopped
 
-networks:
-  caddy:
-    external: true
 EOF
 
     # Create nginx configuration
@@ -48,7 +40,7 @@ server {
     }
 
     location ~ \.php$ {
-        fastcgi_pass php_${result}:9000;
+        fastcgi_pass ${result}:9000;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
@@ -67,7 +59,7 @@ docker compose down --remove-orphans
 docker compose up -d
 
 # Get the exposed port from nginx container
-port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' nginx_${result})
+port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' nginx${result})
 
 # Create Caddyfile configuration
 cat > Caddyfile << EOF
@@ -79,12 +71,12 @@ cat > Caddyfile << EOF
 ${result}.localhost {
     encode gzip zstd
     reverse_proxy localhost:${port}
-    header {
-        ?Server "Secured Server"
-        ?X-Powered-By "Secured Server"
-        ?X-Robot-Tag "Secured Server"
-    }
+header {
+Cache-Control public, max-age=31536000
+}
+
 }
 EOF
 
 echo "Site accessible at: https://${result}.localhost"
+code . && caddy run
