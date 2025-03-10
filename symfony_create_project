@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# Définition des couleurs pour l'affichage
+GREEN="\e[32m"
+RED="\e[31m"
+YELLOW="\e[33m"
+NC="\e[0m" # No Color
+
+# Vérification des prérequis
+if ! command -v git &> /dev/null; then
+    echo -e "${RED}Erreur : Git n'est pas installé.${NC}"
+    exit 1
+fi
+
+if ! command -v docker &> /dev/null; then
+    echo -e "${RED}Erreur : Docker n'est pas installé.${NC}"
+    exit 1
+fi
+
+if ! command -v docker compose &> /dev/null; then
+    echo -e "${RED}Erreur : Docker Compose n'est pas installé.${NC}"
+    exit 1
+fi
+
+# Vérification du paramètre
+if [ -z "$1" ]; then
+    echo -e "${RED}Erreur : Vous devez fournir un nom de dossier.${NC}"
+    echo -e "${YELLOW}Usage : $0 mon_projet${NC}"
+    exit 1
+fi
+
+PROJECT_NAME=$1
+
+# Clonage du projet
+echo -e "${GREEN}Clonage du dépôt Git dans le dossier $PROJECT_NAME...${NC}"
+if git clone git@github.com:cadot-eu/symfony.git "$PROJECT_NAME"; then
+    echo -e "${GREEN}Clonage réussi.${NC}"
+else
+    echo -e "${RED}Échec du clonage. Vérifiez votre connexion ou votre accès SSH.${NC}"
+    exit 1
+fi
+
+cd "$PROJECT_NAME" || exit 1
+
+# Construction des conteneurs Docker
+echo -e "${GREEN}Construction des images Docker...${NC}"
+docker compose build --no-cache --pull
+
+# Lancement des conteneurs
+echo -e "${GREEN}Lancement des conteneurs Docker...${NC}"
+docker compose up --pull always -d --wait
+
+# Installation des dépendances Symfony
+echo -e "${GREEN}Installation des librairies Symfony...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" composer require \
+symfony/orm-pack \
+symfony/mercure-bundle \
+symfony/panther \
+symfony/mailer \
+symfony/ux-turbo \
+symfony/twig-bundle
+
+echo -e "${GREEN}Installation de la debug bar...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack
+
+# Suppression du répertoire .git
+echo -e "${YELLOW}Suppression du répertoire .git...${NC}"
+rm -rf .git
+
+# Arrêt des conteneurs Docker
+echo -e "${GREEN}Arrêt des conteneurs Docker...${NC}"
+docker compose down
+
+# Reconstruction après modifications
+echo -e "${GREEN}Reconstruction des conteneurs Docker...${NC}"
+docker compose build --no-cache --pull
+
+# Relancement des conteneurs
+echo -e "${GREEN}Relancement des conteneurs Docker...${NC}"
+docker compose up -d
+
+# Affichage des conteneurs actifs
+echo -e "${GREEN}Liste des conteneurs actifs :${NC}"
+docker ps
