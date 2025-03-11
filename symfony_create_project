@@ -60,8 +60,8 @@ symfony/mailer \
 symfony/ux-turbo \
 symfony/twig-bundle
 
-echo -e "${GREEN}Installation de la debug bar...${NC}"
-docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack
+echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle
 
 # Suppression du répertoire .git
 echo -e "${YELLOW}Suppression du répertoire .git...${NC}"
@@ -87,5 +87,13 @@ docker ps
 echo -e "${GREEN}Changement des permissions${NC}"
 sudo chown $USER: .*
 sudo chown $USER: *
-sudo chown -R sudo chown -R $USER: assets bin composer.* config LICENSE migrations public src templates var vendor
+sudo chown -R $USER: assets bin composer.* config LICENSE migrations public src templates var vendor
 sudo chown $USER: ../$1
+
+# On adapte la variable MERCURE de .env
+echo -e "${GREEN}Adaptation de l'url Mercure dans le .env{NC}"
+sed -i 's|example.com|localhost|' .env
+
+# On informe qu'il faut créer le repoistory dans github
+echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
+
