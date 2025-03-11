@@ -88,4 +88,4 @@ echo -e "${GREEN}Changement des permissions${NC}"
 sudo chown $USER: .*
 sudo chown $USER: *
 sudo chown -R sudo chown -R $USER: assets bin composer.* config LICENSE migrations public src templates var vendor
-
+sudo chown $USER: ../$1
