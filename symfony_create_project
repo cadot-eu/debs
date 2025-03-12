@@ -1,4 +1,4 @@
-#!/bin/bash
+*#!/bin/bash
 echo -e "${GREEN}On tue tous les dockers${NC}"
 docker kill $(docker ps -q) 
 # Définition des couleurs pour l'affichage
@@ -67,7 +67,8 @@ symfony/asset-mapper \
 symfony/asset \
 symfony/twig-pack \
 symfony/monolog-bundle \
-api
+api \
+webonyx/graphql-php
 
 echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
 docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle
@@ -106,3 +107,25 @@ sed -i 's|example.com|localhost|' .env
 # On informe qu'il faut créer le repoistory dans github
 echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
 
+echo -e "${GREEN}Ajout d'event pour mercure{NC}"
+echo -e "\n$(cat <<EOF
+document.addEventListener('DOMContentLoaded', () => {
+  const eventSource = new EventSource("https://localhost/.well-known/mercure?topic=*");
+
+  eventSource.onopen = () => {
+    console.log('Connexion établie');
+  };
+
+  eventSource.onmessage = event => {
+    console.log('Message reçu:', event);
+    //on le décode
+    const data = JSON.parse(event.data);
+    console.log(data)
+  };
+
+  eventSource.onerror = event => {
+    console.log('Erreur:', event);
+  };
+});
+EOF
+)" >> $1/assets/app.js
