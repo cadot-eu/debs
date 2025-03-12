@@ -71,8 +71,9 @@ api \
 webonyx/graphql-php \
 form
 
+# Ajout des dev
 echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
-docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle
+docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle symfony/phpunit-bridge
 
 # Suppression du répertoire .git
 echo -e "${YELLOW}Suppression du répertoire .git...${NC}"
