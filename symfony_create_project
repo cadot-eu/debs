@@ -68,7 +68,8 @@ symfony/asset \
 symfony/twig-pack \
 symfony/monolog-bundle \
 api \
-webonyx/graphql-php
+webonyx/graphql-php \
+form
 
 echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
 docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle
