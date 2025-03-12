@@ -1,5 +1,6 @@
 #!/bin/bash
-
+echo -e "${GREEN}On tue tous les dockers${NC}"
+docker kill $(docker ps -q) 
 # Définition des couleurs pour l'affichage
 GREEN="\e[32m"
 RED="\e[31m"
@@ -53,12 +54,20 @@ docker compose up --pull always -d --wait
 # Installation des dépendances Symfony
 echo -e "${GREEN}Installation des librairies Symfony...${NC}"
 docker exec -it "${PROJECT_NAME}-php-1" composer require \
+symfony/asset-mapper \
+symfony/asset \
+symfony/twig-pack \
 symfony/orm-pack \
 symfony/mercure-bundle \
 symfony/panther \
 symfony/mailer \
 symfony/ux-turbo \
-symfony/twig-bundle
+symfony/twig-bundle \
+symfony/asset-mapper \
+symfony/asset \
+symfony/twig-pack \
+symfony/monolog-bundle \
+api
 
 echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
 docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle
