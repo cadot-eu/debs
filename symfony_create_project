@@ -390,7 +390,142 @@ echo -e "${GREEN}Installation de flasher...${NC}"
 docker exec -it "${PROJECT_NAME}-php-1" php bin/console flasher:install
 
 
+#on mofifie monolog
+echo -e "${GREEN}Modification de monolog...${NC}"
+cat > "config/packages/monolog.yaml" <<EOF
+# config/packages/monolog.yaml
+monolog:
+    channels: ["deprecation", "security", "app"]
+
+    handlers:
+        # Handler principal qui capture les erreurs
+        main:
+            type: fingers_crossed
+            action_level: error
+            handler: nested
+            buffer_size: 50
+            excluded_http_codes: [404, 405]
+
+        # Fichier de log principal (erreurs et warnings)
+        nested:
+            type: rotating_file
+            max_files: 30
+            path: "%kernel.logs_dir%/%kernel.environment%.log"
+            level: warning
+            formatter: monolog.formatter.line
+
+        # Logs pour les messages d'information uniquement
+        info_file:
+            type: rotating_file
+            max_files: 30
+            path: "%kernel.logs_dir%/%kernel.environment%.info.log"
+            level: info
+            max_level: info # Uniquement niveau info, pas au-dessus
+            channels: ["!deprecation"]
+            formatter: monolog.formatter.line
+
+        # Logs de dépréciation séparés
+        deprecation:
+            type: rotating_file
+            max_files: 30
+            path: "%kernel.logs_dir%/%kernel.environment%.deprecations.log"
+            level: debug
+
+        # Filtre pour n'attraper que les dépréciations de PHP
+        deprecation_filter:
+            type: filter
+            handler: deprecation
+            max_level: info
+            channels: ["php"]
+
+        # Handler syslog existant
+        syslog_handler:
+            type: syslog
+            level: debug
+
+        # Handler console existant
+        console:
+            type: console
+            process_psr_3_messages: false
+            channels: ["!event", "!doctrine", "!console"]
+
+when@dev:
+    monolog:
+        handlers:
+            # En dev, on réduit le niveau pour capturer plus d'informations
+            nested:
+                level: debug
+
+            # On conserve les logs d'information dans un fichier dédié
+            info_file:
+                path: "%kernel.logs_dir%/dev.info.log"
+
+            # Logs détaillés pour l'application en dev
+            app_debug:
+                type: rotating_file
+                max_files: 10
+                path: "%kernel.logs_dir%/dev.errorwarnings.log"
+                level: debug
+                channels: ["app"]
+
+when@test:
+    monolog:
+        handlers:
+            main:
+                type: fingers_crossed
+                action_level: error
+                handler: nested
+                excluded_http_codes: [404, 405]
+
+            nested:
+                type: rotating_file
+                max_files: 10
+                path: "%kernel.logs_dir%/test.log"
+                level: debug
+
+when@prod:
+    monolog:
+        handlers:
+            # En prod, on conserve le comportement existant
+            main:
+                type: fingers_crossed
+                action_level: error
+                handler: grouped
+                excluded_http_codes: [404, 405]
+
+            # Groupe pour combiner fichier et email
+            grouped:
+                type: group
+                members: [nested, error_mailer]
+
+            # Configuration des emails critiques
+            # error_mailer:
+            #     type: fingers_crossed
+            #     action_level: critical
+            #     handler: symfony_mailer
+            #     excluded_http_codes: [404, 405]
+
+            # symfony_mailer:
+            #     type: symfony_mailer
+            #     from_email: "%env(MAILER_FROM)%"
+            #     to_email: "%env(MAILER_TO)%"
+            #     subject: "[%kernel.environment%] Erreur critique: %%message%%"
+            #     level: debug
+            #     formatter: monolog.formatter.html
+            #     content_type: text/html
+
+            # Logs de sécurité séparés en prod
+            security_file:
+                type: rotating_file
+                max_files: 30
+                path: "%kernel.logs_dir%/security.log"
+                level: info
+                channels: ["security"]
+EOF
+
+#on supprime ce qu'il y a dans var pour résoudre prb log assès
+echo -e "${GREEN}Suppression de var${NC}"
+rm -rf var
+
 # On informe qu'il faut créer le repoistory dans github
 echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
-
-
