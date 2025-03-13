@@ -69,7 +69,13 @@ symfony/twig-pack \
 symfony/monolog-bundle \
 api \
 webonyx/graphql-php \
-form
+form \
+php-flasher/flasher-symfony \
+symfonycasts/verify-email-bundle \
+liip/imagine-bundle \
+symfony/translation \
+symfonycasts/reset-password-bundle 
+
 
 # Ajout des dev
 echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"

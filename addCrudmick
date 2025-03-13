@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Chemin vers le fichier .gitmodules
+GITMODULES_FILE=".gitmodules"
+
+# Liste des sous-modules à ajouter
+declare -A submodules=(
+  ["src/Controller/base"]="git@github.com:cadot-eu/basecontroller.git"
+  ["src/Command/base"]="git@github.com:cadot-eu/basecommand.git"
+  ["src/EventSubscriber/base"]="git@github.com:cadot-eu/basesubscriber.git"
+  ["src/Imagine"]="git@github.com:cadot-eu/baseimagine.git"
+  ["src/Service/base"]="git@github.com:cadot-eu/baseservice.git"
+  ["src/Twig/base"]="git@github.com:cadot-eu/basetwig.git"
+  ["src/Entity/base"]="git@github.com:cadot-eu/basetraits.git"
+  ["src/EventListener/base"]="git@github.com:cadot-eu/baselisteners.git"
+  ["templates/base"]="git@github.com:cadot-eu/basetemplate.git"
+  ["tests/basetests"]="git@github.com:cadot-eu/basetests.git"
+  ["basetools"]="git@github.com:cadot-eu/basetools.git"
+  ["src/Repository/base"]="git@github.com:cadot-eu/baseRepository.git"
+  ["src/Security"]="git@github.com:cadot-eu/basesecurity.git"
+  ["assets/js"]="git@github.com:cadot-eu/basejs.git"
+  ["assets/controllers/base"]="git@github.com:cadot-eu/basestimulus.git"
+)
+
+# Fonction pour ajouter un sous-module
+add_submodule() {
+  local path="$1"
+  local url="$2"
+
+  # Vérifier si le sous-module existe déjà dans .gitmodules
+  if git config -f "$GITMODULES_FILE" --get-regexp "^submodule\..*\.path$" | grep -q "$path"; then
+    echo "Le sous-module '$path' existe déjà dans .gitmodules."
+  else
+    # Ajouter le sous-module
+    git submodule add -b main "$url" "$path"
+    git config -f "$GITMODULES_FILE" "submodule.$path.active" true
+  fi
+}
+
+# Parcourir et ajouter chaque sous-module
+for path in "${!submodules[@]}"; do
+  url="${submodules[$path]}"
+  add_submodule "$path" "$url"
+done
+
+# Initialiser et mettre à jour les sous-modules
+git submodule update --init --recursive
+
