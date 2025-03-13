@@ -384,6 +384,11 @@ liip_imagine:
 
 EOF
 
+ajout de Liip\ImagineBundle\LiipImagineBundle::class => ['all' => true],
+# on ajoute le bundle liip
+echo -e "${GREEN}Ajout du bundle liip...${NC}"
+sed -i "s/];/Liip\\\ImagineBundle\\\LiipImagineBundle::class => ['all' => true],];/g" config/bundles.php
+
 
 # On lance la commande pour installer flasher
 echo -e "${GREEN}Installation de flasher...${NC}"
