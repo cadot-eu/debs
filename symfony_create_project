@@ -1,4 +1,4 @@
-*#!/bin/bash
+#!/bin/bash
 echo -e "${GREEN}On tue tous les dockers${NC}"
 docker kill $(docker ps -q) 
 # Définition des couleurs pour l'affichage
@@ -67,14 +67,12 @@ symfony/asset-mapper \
 symfony/asset \
 symfony/twig-pack \
 symfony/monolog-bundle \
-api \
-webonyx/graphql-php \
 form \
 php-flasher/flasher-symfony \
 symfonycasts/verify-email-bundle \
 liip/imagine-bundle \
 symfony/translation \
-symfonycasts/reset-password-bundle 
+symfonycasts/reset-password-bundle --no-interaction
 
 
 # Ajout des dev
@@ -83,7 +81,7 @@ docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pac
 
 # Suppression du répertoire .git
 echo -e "${YELLOW}Suppression du répertoire .git...${NC}"
-rm -rf .git
+docker exec -it "${PROJECT_NAME}-php-1" rm -rf .git
 
 # Arrêt des conteneurs Docker
 echo -e "${GREEN}Arrêt des conteneurs Docker...${NC}"
@@ -112,9 +110,7 @@ sudo chown $USER: ../$1
 echo -e "${GREEN}Adaptation de l'url Mercure dans le .env{NC}"
 sed -i 's|example.com|localhost|' .env
 
-# On informe qu'il faut créer le repoistory dans github
-echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
-
+# Ajout de l'event Mercure
 echo -e "${GREEN}Ajout d'event pour mercure{NC}"
 echo -e "\n$(cat <<EOF
 document.addEventListener('DOMContentLoaded', () => {
@@ -136,4 +132,38 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 });
 EOF
-)" >> $1/assets/app.js
+)" >> "assets/app.js"
+
+echo -e "${GREEN}Ajout d'un service updateMercure{NC}"
+cat >> "src/Service/MercureUpdateService.php" <<EOF
+<?php
+
+namespace App\Service;
+
+use Symfony\Component\Notifier\Message\DesktopMessage;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Update;
+
+class MercureUpdateService
+{
+    private $hub;
+    public function __construct(
+        HubInterface $hub
+    ) {
+        $this->hub = $hub;
+    }
+
+    public function update(String \$message, \$type = 'success', string \$chanel = 'flux'): void
+    {
+         \$update = new Update(
+             \$chanel,
+             json_encode(['type' => \$type, 'message' => \$message])
+         );
+        \$this->hub->publish(\$update);
+    }
+}
+EOF
+
+# On informe qu'il faut créer le repoistory dans github
+echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
+
