@@ -50,6 +50,9 @@ docker compose build --no-cache --pull
 # Lancement des conteneurs
 echo -e "${GREEN}Lancement des conteneurs Docker...${NC}"
 docker compose up --pull always -d --wait
+# correction git
+docker exec -it "${PROJECT_NAME}-php-1" git config --global --add safe.directory /app
+
 
 # Installation des dépendances Symfony
 echo -e "${GREEN}Installation des librairies Symfony...${NC}"
@@ -89,7 +92,7 @@ docker compose down
 
 # Reconstruction après modifications
 echo -e "${GREEN}Reconstruction des conteneurs Docker...${NC}"
-docker compose build --no-cache --pull
+docker compose build
 
 # Relancement des conteneurs
 echo -e "${GREEN}Relancement des conteneurs Docker...${NC}"
@@ -112,6 +115,7 @@ sed -i 's|example.com|localhost|' .env
 
 
 echo -e "${GREEN}Ajout d'un service updateMercure{NC}"
+mkdir -p "src/Service"
 cat >> "src/Service/MercureUpdateService.php" <<EOF
 <?php
 
@@ -123,11 +127,11 @@ use Symfony\Component\Mercure\Update;
 
 class MercureUpdateService
 {
-    private $hub;
+    private \$hub;
     public function __construct(
-        HubInterface $hub
+        HubInterface \$hub
     ) {
-        $this->hub = $hub;
+        \$this->hub = \$hub;
     }
 
     public function update(String \$message, \$type = 'success', string \$chanel = 'flux'): void
@@ -144,7 +148,7 @@ EOF
 cat >> "config/services.yaml" <<EOF
     App\Service\MercureUpdateService:
         arguments:
-            - "@Symfony\\Component\\Mercure\\HubInterface"
+            - "@Symfony\\\Component\\\Mercure\\\HubInterface"
 
 EOF
 
