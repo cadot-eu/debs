@@ -385,9 +385,12 @@ liip_imagine:
 EOF
 
 
-
+# On lance la commande pour installer flasher
+echo -e "${GREEN}Installation de flasher...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" php bin/console flasher:install
 
 
 # On informe qu'il faut créer le repoistory dans github
 echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
+
 
