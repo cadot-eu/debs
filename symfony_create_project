@@ -1,6 +1,6 @@
 #!/bin/bash
 echo -e "${GREEN}On tue tous les dockers${NC}"
-docker kill $(docker ps -q) 
+docker kill $(docker ps -q)
 # Définition des couleurs pour l'affichage
 GREEN="\e[32m"
 RED="\e[31m"
@@ -110,29 +110,6 @@ sudo chown $USER: ../$1
 echo -e "${GREEN}Adaptation de l'url Mercure dans le .env{NC}"
 sed -i 's|example.com|localhost|' .env
 
-# Ajout de l'event Mercure
-echo -e "${GREEN}Ajout d'event pour mercure{NC}"
-echo -e "\n$(cat <<EOF
-document.addEventListener('DOMContentLoaded', () => {
-  const eventSource = new EventSource("https://localhost/.well-known/mercure?topic=*");
-
-  eventSource.onopen = () => {
-    console.log('Connexion établie');
-  };
-
-  eventSource.onmessage = event => {
-    console.log('Message reçu:', event);
-    //on le décode
-    const data = JSON.parse(event.data);
-    console.log(data)
-  };
-
-  eventSource.onerror = event => {
-    console.log('Erreur:', event);
-  };
-});
-EOF
-)" >> "assets/app.js"
 
 echo -e "${GREEN}Ajout d'un service updateMercure{NC}"
 cat >> "src/Service/MercureUpdateService.php" <<EOF
@@ -162,6 +139,13 @@ class MercureUpdateService
         \$this->hub->publish(\$update);
     }
 }
+EOF
+#ajout dans services.yaml
+cat >> "config/services.yaml" <<EOF
+    App\Service\MercureUpdateService:
+        arguments:
+            - "@Symfony\\Component\\Mercure\\HubInterface"
+
 EOF
 
 # On informe qu'il faut créer le repoistory dans github
