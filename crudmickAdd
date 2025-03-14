@@ -30,6 +30,8 @@ echo -e "${YELLOW}INSTALLER LES DÉPENDANCES COMPOSER SUIVANTES :${NC}"
 echo -e "- ${GREEN}symfony/password-hasher${NC} : Hashage des mots de passe."
 echo -e "- ${GREEN}symfony/security-bundle${NC} : Gestion de la sécurité et des autorisations."
 echo -e "- ${GREEN}--dev squizlabs/php_codesniffer ${NC} : formater du code PHP."
+echo -e "- ${GREEN}knplabs/knp-paginator-bundle ${NC} : Pagination."
+echo -e "- ${GREEN}twig/string-extra ${NC} : Manipulation de chaînes de caractères."
 echo -e "- ${GREEN}symfony/validator${NC} : Vérification de la validité des données."
 echo -e "${YELLOW}On écrase le security.yaml en ajoutant les nouvelles configurations, les routes ADMIN/SUPERADMIN ...${NC}"
 echo -e "${YELLOW}On ajoute liip dans services pour qu'il soit accessible dans les services.${NC}"
@@ -58,8 +60,9 @@ done
 
 
 # Parcourir et ajouter chaque dépendance
-docker exec -it "${dossier}-php-1" composer require symfony/password-hasher symfony/security-bundle symfony/validator
-docker exec -it "${dossier}-php-1" composer require --dev squizlabs/php_codesniffer
+docker exec -it "${dossier}-php-1" composer require symfony/password-hasher symfony/security-bundle symfony/validator knplabs/knp-paginator-bundle twig/string-extra --no-interaction
+
+docker exec -it "${dossier}-php-1" composer require --dev squizlabs/php_codesniffer zenstruck/foundry --no-interaction
 
 user=$(whoami)
 #On ajoute l'utilisateur dans le docker
@@ -73,6 +76,69 @@ echo -e "${GREEN}Changement des permissions${NC}"
 docker exec -it "${dossier}-php-1" chown ${user}: .*
 docker exec -it "${dossier}-php-1" chown -R ${user}: assets bin composer.* config LICENSE migrations public src templates var vendor
 chown  ${user}: ../$dossier
+
+mkdir -p src/DataFixtures
+cat <<EOF > src/DataFixtures/AdminFixtures.php
+<?php
+
+namespace App\DataFixtures;
+
+use App\Entity\User;
+use App\Repository\UserRepository;
+use App\Repository\ParametresRepository;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use App\Entity\Parametres;
+
+class AdminFixtures extends Fixture
+{
+    private \$compteRepository;
+    private \$parametresrepository;
+    private \$passwordHasher;
+
+    // Injection des dépendances
+    public function __construct(
+        UserRepository \$compteRepository,
+        ParametresRepository \$parametresrepository,
+        UserPasswordHasherInterface \$passwordHasher
+    ) {
+        \$this->compteRepository = \$compteRepository;
+        \$this->parametresrepository = \$parametresrepository;
+        \$this->passwordHasher = \$passwordHasher;
+    }
+
+    public function load(ObjectManager \$em): void
+    {
+        \$docs = ['Mentions légales' => [], 'Conditions générales de vente' => [], 'Livraisons et retours' => []];
+        foreach (\$docs as \$doc => \$tab) {
+            \$type = isset(\$tab['type']) ? \$tab['type'] : '';
+            \$text = isset(\$tab['text']) ? \$tab['text'] : '';
+            \$aide = isset(\$tab['aide']) ? \$tab['aide'] : '';
+            \$parametres = new Parametres();
+            \$parametres->setNom(\$doc);
+            \$parametres->setTypevaleur(\$type);
+            \$parametres->setValeur(\$text);
+            \$parametres->setAide(\$aide);
+            \$em->persist(\$parametres);
+            \$em->flush();
+        }
+
+        \$compte = new User();
+        \$compte->setRoles(['ROLE_SUPERADMIN']);
+        \$compte->setEmail('m@cadot.eu');
+        \$compte->setIsVerified(true);
+        \$hashedPassword = \$this->passwordHasher->hashPassword(
+            \$compte,
+            '******'
+        );
+        \$compte->setPassword(\$hashedPassword);
+        \$em->persist(\$compte);
+        \$em->flush();
+    }
+}
+EOF
+
 
 #on ecrase le config/packages/security.yaml
 cat << EOF > config/packages/security.yaml
@@ -384,6 +450,546 @@ class ParametresRepository extends ServiceEntityRepository
 }
 EOF
 
+cat <<EOF > config/packages/paginator.yaml
+knp_paginator:
+  page_range: 5 # number of links shown in the pagination menu (e.g: you have 10 pages, a page_range of 3, on the 5th page you'll see links to page 4, 5, 6)
+  default_options:
+    page_name: page # page query parameter name
+    sort_field_name: sort # sort field query parameter name
+    sort_direction_name: direction # sort direction query parameter name
+    distinct: true # ensure distinct results, useful when ORM queries are using GROUP BY statements
+    filter_field_name: filterField # filter field query parameter name
+    filter_value_name: filterValue # filter value query parameter name
+  template:
+    pagination: "base/knppagination.html.twig" # sliding pagination controls template
+    sortable: "base/knpsortable.html.twig" # sort link template
+    filtration: "base/knpfiltration.html.twig" # filters template
+EOF
+
+cat <<EOF > src/Controller/SecurityController.php
+<?php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
+
+class SecurityController extends AbstractController
+{
+
+    public function __construct( UrlGeneratorInterface \$urlGenerator)
+    {
+        \$this->urlGenerator = \$urlGenerator;
+    }
+
+    #[Route(path: '/login', name: 'app_login')]
+    public function login(AuthenticationUtils \$authenticationUtils): Response
+    {
+        if (\$this->getUser()) { //target_path est donné par l'exception listener
+            try {
+                \$this->urlGenerator->generate('target_path');
+            } catch (RouteNotFoundException) {
+                return \$this->redirectToRoute('admin_index');
+            }
+            return \$this->redirectToRoute('target_path');
+        }
+
+        // get the login error if there is one
+        \$error = \$authenticationUtils->getLastAuthenticationError();
+        // last username entered by the user
+        \$lastUsername = \$authenticationUtils->getLastUsername();
+
+        return \$this->render('security/login.html.twig', [
+            'last_username' => \$lastUsername,
+            'error' => \$error
+        ]);
+    }
+
+    #[Route(path: '/logout', name: 'app_logout')]
+    public function logout(): void
+    {
+        throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
+    }
+}
+EOF
+
+cat <<EOF > src/Controller/ResetPasswordController.php
+<?php
+
+namespace App\Controller;
+
+use App\Entity\User;
+use App\Form\ChangePasswordFormType;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyCasts\Bundle\ResetPassword\Controller\ResetPasswordControllerTrait;
+use SymfonyCasts\Bundle\ResetPassword\Exception\ResetPasswordExceptionInterface;
+use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
+use App\Form\base\ResetPasswordRequestFormType;
+use Flasher\Prime\FlasherInterface;
+
+#[Route('/reset-password')]
+class ResetPasswordController extends AbstractController
+{
+    use ResetPasswordControllerTrait;
+
+    public function __construct(
+        private ResetPasswordHelperInterface \$resetPasswordHelper,
+        private EntityManagerInterface \$entityManager
+    ) {
+    }
+
+    #[Route('', name: 'app_forgot_password_request')]
+    public function request(Request \$request, MailerInterface \$mailer, TranslatorInterface \$translator): Response
+    {
+        \$form = \$this->createForm(ResetPasswordRequestFormType::class);
+        \$form->handleRequest(\$request);
+
+        if (\$form->isSubmitted() && \$form->isValid()) {
+            return \$this->processSendingPasswordResetEmail(
+                \$form->get('email')->getData(),
+                \$mailer,
+                \$translator
+            );
+        }
+
+        return \$this->render('base/reset_password/request.html.twig', [
+            'requestForm' => \$form->createView(),
+        ]);
+    }
+
+    #[Route('/check-email', name: 'app_check_email')]
+    public function checkEmail(): Response
+    {
+        if (null === (\$resetToken = \$this->getTokenObjectFromSession())) {
+            \$resetToken = \$this->resetPasswordHelper->generateFakeResetToken();
+        }
+
+        return \$this->render('base/reset_password/check_email.html.twig', [
+            'resetToken' => \$resetToken,
+        ]);
+    }
+
+    #[Route('/reset/{token}', name: 'app_reset_password')]
+    public function reset(Request \$request, UserPasswordHasherInterface \$passwordHasher, TranslatorInterface \$translator, string \$token = null, FlasherInterface \$flasher): Response
+    {
+        if (\$token) {
+            \$this->storeTokenInSession(\$token);
+            return \$this->redirectToRoute('app_reset_password');
+        }
+
+        \$token = \$this->getTokenFromSession();
+        if (null === \$token) {
+            throw \$this->createNotFoundException('Erreur sur le token');
+        }
+
+        try {
+            \$user = \$this->resetPasswordHelper->validateTokenAndFetchUser(\$token);
+        } catch (ResetPasswordExceptionInterface \$e) {
+            \$flasher('reset_password_error', sprintf(
+                '%s - %s',
+                \$translator->trans(ResetPasswordExceptionInterface::MESSAGE_PROBLEM_VALIDATE, [], 'ResetPasswordBundle'),
+                \$translator->trans(\$e->getReason(), [], 'ResetPasswordBundle')
+            ));
+
+            return \$this->redirectToRoute('app_forgot_password_request');
+        }
+
+        \$form = \$this->createForm(ChangePasswordFormType::class);
+        \$form->handleRequest(\$request);
+
+        if (\$form->isSubmitted() && \$form->isValid()) {
+            \$this->resetPasswordHelper->removeResetRequest(\$token);
+            \$encodedPassword = \$passwordHasher->hashPassword(
+                \$user,
+                \$form->get('plainPassword')->getData()
+            );
+            \$user->setPassword(\$encodedPassword);
+            \$this->entityManager->flush();
+            \$this->cleanSessionAfterReset();
+
+            return \$this->redirectToRoute('home_index');
+        }
+
+        return \$this->render('base/reset_password/reset.html.twig', [
+            'resetForm' => \$form
+        ]);
+    }
+
+    private function processSendingPasswordResetEmail(string \$emailFormData, MailerInterface \$mailer, TranslatorInterface \$translator): RedirectResponse
+    {
+        \$user = \$this->entityManager->getRepository(User::class)->findOneBy([
+            'email' => \$emailFormData,
+        ]);
+
+        if (!\$user) {
+            return \$this->redirectToRoute('app_check_email');
+        }
+
+        try {
+            \$resetToken = \$this->resetPasswordHelper->generateResetToken(\$user);
+        } catch (ResetPasswordExceptionInterface \$e) {
+            return \$this->redirectToRoute('app_check_email');
+        }
+
+        \$emailFrom = \$_ENV['MAILER_FROM'] ?? 'no-reply@example.com';
+        \$emailFromName = \$_ENV['MAILER_FROM_NAME'] ?? 'Support';
+
+        \$email = (new TemplatedEmail())
+            ->from(new Address(\$emailFrom, \$emailFromName))
+            ->to(\$user->getEmail())
+            ->subject('Demande de réinitialisation de votre mot de passe')
+            ->htmlTemplate('base/reset_password/email.html.twig')
+            ->context([
+                'resetToken' => \$resetToken,
+            ]);
+
+        \$mailer->send(\$email);
+
+        \$this->setTokenObjectInSession(\$resetToken);
+
+        return \$this->redirectToRoute('app_check_email');
+    }
+}
+EOF
+
+cat <<EOF > src/Entity/User.php
+<?php
+
+namespace App\Entity;
+
+use App\Repository\UserRepository;
+use App\Entity\base\SlugTrait;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Doctrine\DBAL\Types\Types;
+use App\Entity\base\TimeTrait;
+use App\Entity\base\VerifiedTrait;
+use App\Entity\base\SituationTrait;
+
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\HasLifecycleCallbacks]
+#[
+    UniqueEntity(
+        fields: ['email'],
+        message: 'Merci de contacter le site'
+    )
+]
+#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
+#[ORM\Table(name: "utilisateurs")] 
+class User implements UserInterface, PasswordAuthenticatedUserInterface
+{
+    use SlugTrait;
+    use TimeTrait;
+    use SituationTrait;
+    use VerifiedTrait;
+
+    /**
+     * HIDE:{"roles[0]":"ROLE_SUPERADMIN"}
+     * TPL:no_created
+     * TPL:no_updated
+     * SEARCH:['id']
+     */
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: Types::INTEGER)]
+    private \$id;
+    //_____________________________________________
+    /**
+     * email
+     */
+    #[ORM\Column(type: Types::STRING, length: 180, unique: true)]
+    private \$email;
+    //_____________________________________________
+    /**
+     * choice
+     * options:{"client":"ROLE_USER","administrateur":"ROLE_ADMIN","partenaire":"ROLE_PARTENAIRE"}
+     * TWIG:join(',')
+     * OPT:{"multiple":true,"expanded":true}
+     */
+    #[ORM\Column(type: Types::JSON)]
+    private \$roles = [];
+    //_____________________________________________
+    /**
+     * TPL:no_index
+     * TPL:no_form
+     */
+    #[ORM\Column(type: Types::STRING, nullable: true)]
+    private \$password;
+    //_____________________________________________
+    /**
+     * image
+     * tpl:index_FileImage
+     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private \$logoentreprise;
+    //_____________________________________________
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private \$nom;
+    //_____________________________________________
+    /**
+     * tpl:no_index
+     */
+
+    public function getId(): ?int
+    {
+        return \$this->id;
+    }
+    public function getEmail(): ?string
+    {
+        return \$this->email;
+    }
+    public function setEmail(string \$email): self
+    {
+        \$this->email = \$email;
+        return \$this;
+    }
+    public function getUserIdentifier(): string
+    {
+        return (string) \$this->email;
+    }
+    public function getRoles(): array
+    {
+        \$roles = \$this->roles;
+        if (!\$roles) {
+            \$roles[] = 'ROLE_USER';
+        }
+        return array_unique(\$roles);
+    }
+    public function setRoles(array \$roles): self
+    {
+        \$this->roles = \$roles;
+        return \$this;
+    }
+    public function getPassword(): ?string
+    {
+        return \$this->password;
+    }
+    public function setPassword(?string \$password): self
+    {
+        \$this->password = \$password;
+        return \$this;
+    }
+    public function eraseCredentials(): void
+    {
+        // If you store any temporary, sensitive data on the user, clear it here
+        // \$this->plainPassword = null;
+    }
+}
+EOF
+
+cat <<EOF > src/Entity/ResetPasswordRequest.php
+<?php
+
+namespace App\Entity;
+
+use App\Repository\base\ResetPasswordRequestRepository;
+use Doctrine\ORM\Mapping as ORM;
+use SymfonyCasts\Bundle\ResetPassword\Model\ResetPasswordRequestInterface;
+use SymfonyCasts\Bundle\ResetPassword\Model\ResetPasswordRequestTrait;
+
+#[ORM\Entity(repositoryClass: ResetPasswordRequestRepository::class)]
+class ResetPasswordRequest implements ResetPasswordRequestInterface
+{
+    use ResetPasswordRequestTrait;
+
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int \$id = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User \$user = null;
+
+    public function __construct(object \$user, \DateTimeInterface \$expiresAt, string \$selector, string \$hashedToken)
+    {
+        \$this->user = \$user;
+        \$this->initialize(\$expiresAt, \$selector, \$hashedToken);
+    }
+
+    public function getId(): ?int
+    {
+        return \$this->id;
+    }
+
+    public function getUser(): object
+    {
+        return \$this->user;
+    }
+}
+EOF
+
+cat <<EOF > src/Repository/UserRepository.php
+<?php
+
+namespace App\Repository;
+use App\Entity\User;
+use App\Repository\base\SearchRepositoryTrait;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
+
+/**
+ * @method User|null find(\$id, \$lockMode = null, \$lockVersion = null)
+ * @method User|null findOneBy(array \$criteria, array \$orderBy = null)
+ * @method User[]    findAll()
+ * @method User[]    findBy(array \$criteria, array \$orderBy = null, \$limit = null, \$offset = null)
+ */
+class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
+{
+    use SearchRepositoryTrait;
+
+    public function __construct(ManagerRegistry \$registry)
+    {
+        parent::__construct(\$registry, User::class);
+    }
+
+    /**
+     * @throws ORMException
+     * @throws OptimisticLockException
+     */
+    public function add(User \$entity, bool \$flush = true): void
+    {
+        \$this->_em->persist(\$entity);
+        if (\$flush) {
+            \$this->_em->flush();
+        }
+    }
+
+    /**
+     * @throws ORMException
+     * @throws OptimisticLockException
+     */
+    public function remove(User \$entity, bool \$flush = true): void
+    {
+        \$this->_em->remove(\$entity);
+        if (\$flush) {
+            \$this->_em->flush();
+        }
+    }
+
+    /**
+     * Used to upgrade (rehash) the user's password automatically over time.
+     */
+    public function upgradePassword(PasswordAuthenticatedUserInterface \$user, string \$newHashedPassword): void
+    {
+        if (!\$user instanceof User) {
+            throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', \get_class(\$user)));
+        }
+        \$user->setPassword(\$newHashedPassword);
+        \$this->_em->persist(\$user);
+        \$this->_em->flush();
+    }
+
+    public function findByRoleAndSituation(string \$role)
+    {
+        \$role = mb_strtoupper(\$role);
+        return \$this->createQueryBuilder('u')
+            ->where('u.situation = :situation')
+            ->andWhere('u.roles = :role')
+            ->setParameter('situation', 'actif')
+            ->setParameter('role', \$role)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function index(\$search, \$fields, \$sort, \$direction, \$categorie = null, \$deleted = false, \$etat = null)
+    {
+        \$sort = is_null(\$sort) ? 'a.id' : \$sort;
+        \$qb = \$this->createQueryBuilder('a');
+        if (\$deleted) {
+            \$qb->where(\$qb->expr()->isNotNull('a.deletedAt'));
+        } else {
+            \$qb->where(\$qb->expr()->isNull('a.deletedAt'));
+        }
+        if (\$etat != null) {
+            \$qb->andwhere(\$qb->expr()->eq('a.etat', ':etat'))
+                ->setParameter('etat', \$etat);
+        }
+        \$ORX = \$qb->expr()->orx();
+        foreach (\$fields as \$field) {
+            \$ors = [];
+            foreach (explode(' ', \$search) as \$s) {
+                \$s = str_replace("'", "''", \$s);
+                \$ors[] = \$qb->expr()->orx("a.\$field LIKE '%\$s%' ");
+            }
+            \$ORX->add(join(' AND ', \$ors));
+        }
+        \$qb->andWhere(\$ORX);
+        if (\$categorie != null) {
+            \$qb->andwhere(\$qb->expr()->isMemberOf(':categorie', 'a.categories'))->setParameter('categorie', \$categorie);
+        }
+        return \$qb->orderBy(\$sort, strtoupper(\$direction))
+            ->getQuery()
+            ->getResult();
+    }
+    //fin index
+}
+EOF
+
+
+mkdir -p templates/security && cat <<EOF > templates/security/login.html.twig
+{% extends '/admin/base.html.twig' %}
+
+{% block title %}
+	{{ t('Panneau de connexion') }}
+{% endblock %}
+
+{% block body %}
+	<form action="{{ path('app_login') }}" method="post" data-turbo="false">
+		{% if error %}
+			<div class="alert alert-danger">
+				{{ error.messageKey|trans(error.messageData, 'security') }}
+			</div>
+		{% endif %}
+
+		<h1 class="h3 mb-3 font-weight-normal">
+			Accès à l'espace membre
+		</h1>
+		<label for="inputEmail">
+			{{ t('Email') }}
+		</label>
+		<input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
+		<label for="inputPassword">
+			{{ t('Password') }}
+		</label>
+		<input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+
+		<input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+		<div class="checkbox mb-3">
+			<label>
+				<input type="checkbox" name="_remember_me">
+				Gardez la connexion pendant une semaine
+			</label>
+		</div>
+		<button class="btn btn-lg btn-primary" type="submit">
+			Connexion
+		</button>
+		<a href="{{ path('app_forgot_password_request') }}">
+			Réinitialiser mon mot de passe
+		</a>
+	</form>
+{% endblock %}
+EOF
 
 
 # Chemin vers le fichier .gitmodules
@@ -436,3 +1042,5 @@ git submodule update --init --recursive
 git clone https://github.com/cadot-eu/crudmick.git src/Command/crudmick
 
 docker exec -it "${dossier}-php-1" php bin/console d:s:u --force
+
+docker exec -it "${dossier}-php-1" mkdir templates/admin && cp templates/base.html.twig templates/admin/.

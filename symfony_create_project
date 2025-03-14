@@ -36,6 +36,7 @@ echo -e "- ${GREEN}symfony/debug-pack${NC} : Outils de débogage pour Symfony."
 echo -e "- ${GREEN}symfony/maker-bundle${NC} : Génération de code (contrôleurs, entités, formulaires...)."
 echo -e "- ${GREEN}symfony/phpunit-bridge${NC} : Intégration de PHPUnit pour les tests unitaires."
 echo -e "- ${GREEN}phpunit/phpunit${NC} : Outil de tests unitaires pour PHP."
+echo -e "- ${GREEN}doctrine/doctrine-fixtures-bundle${NC} : Gestionnaire de fixtures Doctrine."
 
 echo -e "\n${GREEN}NETTOYAGE${NC}"
 echo -e "- Suppression du répertoire ${RED}.git${NC} pour éviter les conflits de versionnement."
@@ -119,7 +120,7 @@ symfonycasts/reset-password-bundle --no-interaction
 
 # Ajout des dev
 echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
-docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle symfony/phpunit-bridge  symfony/phpunit-bridge phpunit/phpunit
+docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle symfony/phpunit-bridge  symfony/phpunit-bridge phpunit/phpunit doctrine/doctrine-fixtures-bundle --no-interaction
 
 # Suppression du répertoire .git
 echo -e "${YELLOW}Suppression du répertoire .git...${NC}"
@@ -152,6 +153,17 @@ sudo chown $USER: ../$1
 echo -e "${GREEN}Adaptation de l'url Mercure dans le .env{NC}"
 sed -i 's|example.com|localhost|' .env
 
+#si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
+echo -e "${GREEN}Ajout de MAILER_FROM et MAILER_FROM_NAME dans le .env{NC}"
+if [ ! -f .env.local ]; then
+    touch .env.local
+    if ! grep -q "MAILER_FROM=" .env.local; then
+        echo "MAILER_FROM=a@aa.aa" >> .env.local
+    fi
+    if ! grep -q "MAILER_FROM_NAME=" .env.local; then
+        echo "MAILER_FROM_NAME=Symfony" >> .env.local
+    fi
+fi
 
 echo -e "${GREEN}Ajout d'un service updateMercure{NC}"
 mkdir -p "src/Service"

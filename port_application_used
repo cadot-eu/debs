@@ -1,1 +1,1 @@
-sudo netstat -nlp | grep :$1
+sudo ss -nlp | grep :$1
