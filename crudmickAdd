@@ -1,48 +1,345 @@
 #!/bin/bash
+dossier=${PWD##*/}
+
 
 # Chemin vers le fichier .gitmodules
 GITMODULES_FILE=".gitmodules"
 
 # Liste des sous-modules à ajouter
 declare -A submodules=(
-  ["src/Controller/base"]="git@github.com:cadot-eu/basecontroller.git"
-  ["src/Command/base"]="git@github.com:cadot-eu/basecommand.git"
-  ["src/EventSubscriber/base"]="git@github.com:cadot-eu/basesubscriber.git"
-  ["src/Imagine"]="git@github.com:cadot-eu/baseimagine.git"
-  ["src/Service/base"]="git@github.com:cadot-eu/baseservice.git"
-  ["src/Twig/base"]="git@github.com:cadot-eu/basetwig.git"
-  ["src/Entity/base"]="git@github.com:cadot-eu/basetraits.git"
-  ["src/EventListener/base"]="git@github.com:cadot-eu/baselisteners.git"
-  ["templates/base"]="git@github.com:cadot-eu/basetemplate.git"
-  ["tests/basetests"]="git@github.com:cadot-eu/basetests.git"
-  ["basetools"]="git@github.com:cadot-eu/basetools.git"
-  ["src/Repository/base"]="git@github.com:cadot-eu/baseRepository.git"
-  ["src/Security"]="git@github.com:cadot-eu/basesecurity.git"
-  ["assets/js"]="git@github.com:cadot-eu/basejs.git"
-  ["assets/controllers/base"]="git@github.com:cadot-eu/basestimulus.git"
+    ["src/Controller/base"]="git@github.com:cadot-eu/basecontroller.git"
+    ["src/Command/base"]="git@github.com:cadot-eu/basecommand.git"
+    ["src/EventSubscriber/base"]="git@github.com:cadot-eu/basesubscriber.git"
+    ["src/Imagine"]="git@github.com:cadot-eu/baseimagine.git"
+    ["src/Service/base"]="git@github.com:cadot-eu/baseservice.git"
+    ["src/Twig/base"]="git@github.com:cadot-eu/basetwig.git"
+    ["src/Entity/base"]="git@github.com:cadot-eu/basetraits.git"
+    ["src/EventListener/base"]="git@github.com:cadot-eu/baselisteners.git"
+    ["templates/base"]="git@github.com:cadot-eu/basetemplate.git"
+    ["tests/basetests"]="git@github.com:cadot-eu/basetests.git"
+    ["basetools"]="git@github.com:cadot-eu/basetools.git"
+    ["src/Repository/base"]="git@github.com:cadot-eu/baseRepository.git"
+    ["src/Security"]="git@github.com:cadot-eu/basesecurity.git"
+    ["assets/js"]="git@github.com:cadot-eu/basejs.git"
+    ["assets/controllers/base"]="git@github.com:cadot-eu/basestimulus.git"
 )
 
 # Fonction pour ajouter un sous-module
 add_submodule() {
-  local path="$1"
-  local url="$2"
-
-  # Vérifier si le sous-module existe déjà dans .gitmodules
-  if git config -f "$GITMODULES_FILE" --get-regexp "^submodule\..*\.path$" | grep -q "$path"; then
-    echo "Le sous-module '$path' existe déjà dans .gitmodules."
-  else
-    # Ajouter le sous-module
-    git submodule add -b main "$url" "$path"
-    git config -f "$GITMODULES_FILE" "submodule.$path.active" true
-  fi
+    local path="$1"
+    local url="$2"
+    
+    # Vérifier si le sous-module existe déjà dans .gitmodules
+    if git config -f "$GITMODULES_FILE" --get-regexp "^submodule\..*\.path$" | grep -q "$path"; then
+        echo "Le sous-module '$path' existe déjà dans .gitmodules."
+    else
+        # Ajouter le sous-module
+        git submodule add -b main "$url" "$path"
+        git config -f "$GITMODULES_FILE" "submodule.$path.active" true
+    fi
 }
 
 # Parcourir et ajouter chaque sous-module
 for path in "${!submodules[@]}"; do
-  url="${submodules[$path]}"
-  add_submodule "$path" "$url"
+    url="${submodules[$path]}"
+    add_submodule "$path" "$url"
 done
 
 # Initialiser et mettre à jour les sous-modules
 git submodule update --init --recursive
 
+# liste des librairies composer à ajouter
+declare -A composer=(
+    [
+        'symfony/password-hasher',
+        'symfony/security-bundle',
+        'symfony/validator'
+    ]
+);
+
+# Parcourir et ajouter chaque sous-module
+for path in "${!composer[@]}"; do
+    url="${composer[$path]}"
+    composer require "$url"
+done
+
+#on ecrase le config/packages/security.yaml
+cat << EOF > config/packages/security.yaml
+security:
+    role_hierarchy:
+        ROLE_ADMIN: ROLE_ADMIN
+        ROLE_SUPERADMIN: [ROLE_SUPERADMIN, ROLE_ADMIN]
+    #  enable_authenticator_manager: true
+    hide_user_not_found: false #voir erreur précise pour login
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
+
+    # https://symfony.com/doc/current/security.html#where-do-users-come-from-user-providers
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+    firewalls:
+        image_resolver: #pour liip_imagine afin de ne pas vérifier que l'utilisateur est connecté
+            pattern: ^/media/cache/resolve
+            security: false
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        main:
+            lazy: true
+            logout:
+                path: app_logout
+                clear_site_data:
+                    - cookies
+                    - storage
+                # where to redirect after logout
+                target: home_index
+            form_login:
+                login_path: app_login
+                check_path: app_login
+            entry_point: form_login
+            remember_me:
+                secret: "%kernel.secret%" # required
+                lifetime: 604800 # 1 week in seconds
+                signature_properties: ["password", "updatedAt"] # cookies supprimr si password ou updatedAt chang
+                token_provider: #mise en base de données du cookie
+                    doctrine: true
+            custom_authenticator: App\Security\AppAuthenticator
+
+    # Note: Only the *first* access control that matches will be used
+    access_control:
+        - { path: /admin/parametres/new, roles: ROLE_SUPERADMIN }
+        - { path: /admin/fiche/new, roles: ROLE_SUPERADMIN }
+        - { path: /admin/groupe, roles: [ROLE_PARTENAIRE, ROLE_SUPERADMIN] }
+        - { path: /admin/produit, roles: [ROLE_PARTENAIRE, ROLE_SUPERADMIN] }
+        - { path: /admin/mon-compte, roles: [ROLE_PARTENAIRE, ROLE_SUPERADMIN] }
+        - {
+              path: /admin/accueil,
+              roles: [ROLE_ADMIN, ROLE_SUPERADMIN, ROLE_PARTENAIRE],
+          }
+        - { path: /admin/*, roles: [ROLE_ADMIN, ROLE_SUPERADMIN] }
+        - { path: /superadmin/*, roles: [ROLE_SUPERADMIN] }
+        # - { path: ^/profile, roles: ROLE_USER }
+EOF
+
+//on ajoute à la fin de config/services.yaml
+cat << EOF >> config/services.yaml
+    app.filter.all_filter:
+        class: App\Imagine\Filter\Loader\AllImagineFilter
+        tags:
+            - { name: "liip_imagine.filter.loader", loader: "allfilter" }
+    Liip\ImagineBundle\Service\FilterService:
+        alias: "liip_imagine.service.filter"
+
+EOF
+
+//on créé une entité paramètre
+cat << EOF >> src/Entity/Parametre.php
+<?php
+namespace App\Entity;
+use App\Repository\ParametresRepository;
+use App\Entity\base\SlugTrait;
+use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
+use Doctrine\DBAL\Types\Types;
+use App\Entity\base\TimeTrait;
+use Symfony\Component\DomCrawler\Crawler;
+use App\Service\base\HtmlHelper;
+use App\Service\base\ToolsHelper;
+use App\Twig\base\CkeditorExtension;
+use Symfony\Component\String\Slugger\AsciiSlugger;
+#[ORM\Entity(repositoryClass: ParametresRepository::class)]
+#[ORM\HasLifecycleCallbacks]
+#[UniqueEntity('nom')]
+class Parametres
+{
+	use SlugTrait;
+	use TimeTrait;
+	/**
+	 * TPL:no_action_add
+	 * TPL:no_access_deleted
+	 * TPL:no_created
+	 * TPL:no_updated
+	 * TPL:no_index
+	 * SEARCH:['id','nom','valeur']
+	 */
+	#[ORM\Id, ORM\GeneratedValue, ORM\Column(type: Types::INTEGER)]
+	private $id;
+    //_____________________________________________
+	//_____________________________________________
+	//_____________________________________________
+	#[ORM\Column(type: Types::STRING, length: 255, unique: true)]
+	/**
+	 * string
+	 */
+	private $nom;
+    //_____________________________________________
+	//_____________________________________________
+	//_____________________________________________
+	/**
+	 * attr:{"data-controller" : "base--suneditor"}
+	 * attr:{"data-base--suneditor-toolbar-value": "§$AtypeOption[\"data\"]->getTypevaleur()§"}
+	 */
+	#[ORM\Column(type: Types::TEXT, nullable: true)]
+	private $valeur;
+    //_____________________________________________
+	//_____________________________________________
+	//_____________________________________________
+	/**
+	 * readonlyroot
+	 * TPL:no_index
+	 */
+	#[ORM\Column(type: 'string', length: 255, nullable: true)]
+	private $aide;
+    //_____________________________________________
+	//_____________________________________________
+	//_____________________________________________
+	/**
+	 * hiddenroot
+	 * TPL:no_index
+	 */
+	#[ORM\Column(type: 'string', length: 255, nullable: true)]
+	private $typevaleur = 'normal';
+    //_____________________________________________
+	//_____________________________________________
+	//_____________________________________________
+	public function getId(): ?int
+	{
+		return $this->id;
+	}
+	public function getNom(): ?string
+	{
+		return $this->nom;
+	}
+	public function setNom(string $nom): self
+	{
+		$this->nom = CkeditorExtension::ckclean($nom);
+		return $this;
+	}
+	public function getValeur(): ?string
+	{
+		return $this->valeur;
+	}
+	public function setValeur(?string $valeur): self
+	{
+		if (
+			substr($valeur, 0, strlen('<p>') == '<p>') and
+			substr($valeur, 0, -strlen('</p>') == '</p>')
+		) {
+			$this->valeur = substr(
+				substr($valeur, strlen('<p>')),
+				0,
+				-strlen('</p>')
+			);
+		} else {
+			$this->valeur = $valeur;
+		}
+		return $this;
+	}
+	public function getAide(): ?string
+	{
+		return $this->aide;
+	}
+	public function setAide(?string $aide): self
+	{
+		$this->aide = $aide;
+		return $this;
+	}
+	public function getTypevaleur(): ?string
+	{
+		return $this->typevaleur;
+	}
+	public function setTypevaleur(?string $typevaleur): self
+	{
+		$this->typevaleur = $typevaleur;
+		return $this;
+	}
+}
+
+EOF
+
+//on créé le repository
+cat << EOF >> src/Repository/ParametresRepository.php
+<?php
+namespace App\Repository;
+use App\Entity\Parametres;
+use App\Repository\base\SearchRepositoryTrait;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
+use Doctrine\Persistence\ManagerRegistry;
+/**
+ * @method Parametres|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Parametres|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Parametres[]    findAll()
+ * @method Parametres[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ */
+class ParametresRepository extends ServiceEntityRepository
+{
+    use SearchRepositoryTrait;
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, Parametres::class);
+    }
+    /**
+     * @throws ORMException
+     * @throws OptimisticLockException
+     */
+    public function add(Parametres $entity, bool $flush = true): void
+    {
+        $this->_em->persist($entity);
+        if ($flush) {
+            $this->_em->flush();
+        }
+    }
+    /**
+     * @throws ORMException
+     * @throws OptimisticLockException
+     */
+    public function remove(Parametres $entity, bool $flush = true): void
+    {
+        $this->_em->remove($entity);
+        if ($flush) {
+            $this->_em->flush();
+        }
+    }
+    public function index($search, $fields, $sort, $direction, $categorie = null, $deleted = false, $etat = null)
+    {
+        $sort = is_null($sort) ? 'a.id' : $sort;
+        $qb = $this->createQueryBuilder('a');
+        if ($deleted) {
+            $qb->where($qb->expr()->isNotNull('a.deletedAt'));
+        } else {
+            $qb->where($qb->expr()->isNull('a.deletedAt'));
+        }
+        if ($etat != null) {
+            $qb->andwhere($qb->expr()->eq('a.etat', ':etat'))
+              ->setParameter('etat', $etat);
+        }
+        $ORX = $qb->expr()->orx();
+        foreach ($fields as $field) {
+            $ors = [];
+            foreach (explode(' ', $search) as $s) {
+                $s = str_replace("'", "''", $s);
+                $ors[] = $qb->expr()->orx("a.$field LIKE '%$s%' ");
+            }
+            $ORX->add(join(' AND ', $ors));
+        }
+        $qb->andWhere($ORX);
+        if ($categorie != null) {
+            $qb->andwhere($qb->expr()->isMemberOf(':categorie', 'a.categories'))->setParameter('categorie', $categorie);
+        }
+        return $qb->orderBy($sort, strtoupper($direction))
+        ->getQuery()
+        ->getResult();
+    }
+//fin index
+}
+
+EOF
+docker exec -it "${dossier}-php-1" sc d:s:u --force
