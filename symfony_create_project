@@ -74,7 +74,7 @@ PROJECT_NAME=$1
 
 # Clonage du projet
 echo -e "${GREEN}Clonage du dépôt Git dans le dossier $PROJECT_NAME...${NC}"
-if git clone git@github.com:cadot-eu/symfony.git "$PROJECT_NAME"; then
+if git clone https://github.com/cadot-eu/symfony.git "$PROJECT_NAME"; then
     echo -e "${GREEN}Clonage réussi.${NC}"
 else
     echo -e "${RED}Échec du clonage. Vérifiez votre connexion ou votre accès SSH.${NC}"
