@@ -76,20 +76,22 @@ docker exec -it "${dossier}-php-1" chown ${user}: .*
 docker exec -it "${dossier}-php-1" chown -R ${user}: assets bin composer.* config LICENSE migrations public src templates var vendor
 chown  ${user}: ../$dossier
 
+#installation de crudmick
+git clone git@github.com:cadot-eu/crudmick.git src/Command/crudmick
+
 #on clone le git avec les fichiers à copier
-git clone git@github.com:cadot-eu/baseFilesCrudmick.git
 mkdir -p src/DataFixtures
-cp baseFilesCrudmick/src/DataFixtures/ParametresFixtures.php src/DataFixtures/ParametresFixtures.php
-cp baseFilesCrudmick/security.yaml config/packages/security.yaml
-cp baseFilesCrudmick/Parametres.php src/Entity/Parametres.php
-cp baseFilesCrudmick/ParametresRepository.php src/Repository/ParametresRepository.php
-cp baseFilesCrudmick/SecurityController.php src/Controller/SecurityController.php
-cp baseFilesCrudmick/ResetPasswordController.php src/Controller/ResetPasswordController.php
-cp baseFilesCrudmick/User.php src/Entity/User.php
-cp baseFilesCrudmick/ResetPasswordRequest.php src/Entity/ResetPasswordRequest.php
-cp baseFilesCrudmick/UserRepository.php src/Repository/UserRepository.php
+cp src/Command/crudmick/tpl/ParametresFixtures.incphp src/DataFixtures/ParametresFixtures.php
+cp src/Command/crudmick/tpl/security.yaml config/packages/security.yaml
+cp src/Command/crudmick/tpl/Parametres.incphp src/Entity/Parametres.php
+cp src/Command/crudmick/tpl/ParametresRepository.incphp src/Repository/ParametresRepository.php
+cp src/Command/crudmick/tpl/SecurityController.incphp src/Controller/SecurityController.php
+cp src/Command/crudmick/tpl/ResetPasswordController.incphp src/Controller/ResetPasswordController.php
+cp src/Command/crudmick/tpl/User.incphp src/Entity/User.php
+cp src/Command/crudmick/tpl/ResetPasswordRequest.incphp src/Entity/ResetPasswordRequest.php
+cp src/Command/crudmick/tpl/UserRepository.incphp src/Repository/UserRepository.php
 mkdir -p templates/security
-cp baseFilesCrudmick/login.html.twig templates/security/login.html.twig
+cp src/Command/crudmick/tpl/login.html.twig templates/security/login.html.twig
 
 
 #on ajoute à la fin de config/services.yaml
@@ -161,12 +163,11 @@ done
 # Initialiser et mettre à jour les sous-modules
 git submodule update --init --recursive
 
-#installation de crudmick
-git clone git@github.com:cadot-eu/crudmick.git src/Command/crudmick
+
 
 docker exec -it "${dossier}-php-1" php bin/console d:s:u --force
 
-docker exec -it "${dossier}-php-1" php bin/console importmap:require bootstrap
+docker exec -it "${dossier}-php-1" php bin/console importmap:require bootstrap stimulus-use leaflet sweetalert2 imask bigpicture sortable notyf swiper swiper/swiper.css
 docker exec -it "${dossier}-php-1" mkdir templates/admin
 docker exec -it "${dossier}-php-1" cp templates/base.html.twig templates/admin/.
 docker exec -it "${dossier}-php-1" php bin/console d:f:l -n
