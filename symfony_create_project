@@ -1,5 +1,5 @@
 #!/bin/bash
-
+PROJECT_NAME=$1
 
 # Définition des couleurs pour l'affichage
 GREEN="\e[32m"
@@ -42,6 +42,7 @@ echo -e "\n${GREEN}NETTOYAGE${NC}"
 echo -e "- Suppression du répertoire ${RED}.git${NC} pour éviter les conflits de versionnement."
 echo -e "- Arrêt des conteneurs Docker en cours d'exécution."
 echo -e "- Reconstruction des conteneurs Docker pour prendre en compte les nouvelles dépendances."
+echo -e "- On ajoute url site dans .env ${RED}SERVER_NAME=${PROJECT_NAME}.localhost${NC}"
 echo -e "- Modification des permissions des fichiers et répertoires si nécessaire."
 echo -e "- On ajoute app comme sécurisé pour git"
 echo -e "\n${YELLOW}Veuillez appuyer sur une touche pour lancer l'installation...${NC}"
@@ -70,7 +71,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-PROJECT_NAME=$1
 
 # Clonage du projet
 echo -e "${GREEN}Clonage du dépôt Git dans le dossier $PROJECT_NAME...${NC}"
@@ -153,6 +153,28 @@ sudo chown $USER: ../$1
 echo -e "${GREEN}Adaptation de l'url Mercure dans le .env{NC}"
 sed -i 's|example.com|localhost|' .env
 
+# on modifie l'url du site en ajoutant au début de .env
+echo -e "${GREEN}Ajout de l'url du site dans le .env{NC}"
+if ! grep -q "APP_URL=" .env; then
+    echo "SERVER_NAME=${PROJECT_NAME}.localhost" >> .env
+fi
+
+#on met le debug en route
+echo -e "${GREEN}Activation du debug dans le .env{NC}"
+if ! grep -q "DEBUG=" .env; then
+    echo "XDEBUG_MODE=debug" >> .env
+fi
+
+# on créé un port au hazard
+echo -e "${GREEN}Ajout d'un port au hazard dans le .env{NC}"
+HTTP_PORT=$((RANDOM % 64512 + 1024))
+HTTPS_PORT=$((RANDOM % 64512 + 1024))
+HTTP3_PORT=$((RANDOM % 64512 + 1024))
+if ! grep -q "HTTP_PORT=" .env; then
+    echo "HTTP_PORT=${HTTP_PORT}" >> .env
+    echo "HTTPS_PORT=${HTTPS_PORT}" >> .env
+    echo "HTTP3_PORT=${HTTP3_PORT}" >> .env
+fi
 #si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
 echo -e "${GREEN}Ajout de MAILER_FROM et MAILER_FROM_NAME dans le .env{NC}"
 if [ ! -f .env.local ]; then
