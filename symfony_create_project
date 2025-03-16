@@ -165,16 +165,6 @@ if ! grep -q "DEBUG=" .env; then
     echo "XDEBUG_MODE=debug" >> .env
 fi
 
-# on créé un port au hazard
-echo -e "${GREEN}Ajout d'un port au hazard dans le .env{NC}"
-HTTP_PORT=$((RANDOM % 64512 + 1024))
-HTTPS_PORT=$((RANDOM % 64512 + 1024))
-HTTP3_PORT=$((RANDOM % 64512 + 1024))
-if ! grep -q "HTTP_PORT=" .env; then
-    echo "HTTP_PORT=${HTTP_PORT}" >> .env
-    echo "HTTPS_PORT=${HTTPS_PORT}" >> .env
-    echo "HTTP3_PORT=${HTTP3_PORT}" >> .env
-fi
 #si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
 echo -e "${GREEN}Ajout de MAILER_FROM et MAILER_FROM_NAME dans le .env{NC}"
 if [ ! -f .env.local ]; then
