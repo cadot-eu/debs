@@ -168,7 +168,8 @@ fi
 # on créé un port au hazard
 echo -e "${GREEN}On définit l'url et le réseau dans compose.yams{NC}"
 #on remplace php par   php:     networks:       - hosted dans compose.yaml
-yq -y '(.services.php.networks = ["hosted"]) | (.services.database.networks = ["hosted"]) | (.networks.hosted = {"driver": bridge, "name": "'${PROJECT_NAME}'"})' compose.yaml > tmp.yaml && mv tmp.yaml compose.yaml
+yq -y '(.services.php.networks = ["hosted"]) | (.services.database.networks = ["hosted"]) | (.networks.hosted = {"driver": "bridge", "name": "'"${PROJECT_NAME}"'"})' compose.yaml > tmp.yaml && mv tmp.yaml compose.yaml
+
 
 #si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
 echo -e "${GREEN}Ajout de MAILER_FROM et MAILER_FROM_NAME dans le .env{NC}"
@@ -452,8 +453,7 @@ liip_imagine:
 
 EOF
 
-ajout de Liip\ImagineBundle\LiipImagineBundle::class => ['all' => true],
-# on ajoute le bundle liip
+#ajout de Liip\ImagineBundle\LiipImagineBundle::class => ['all' => true],
 echo -e "${GREEN}Ajout du bundle liip...${NC}"
 sed -i "s/];/Liip\\\ImagineBundle\\\LiipImagineBundle::class => ['all' => true],];/g" config/bundles.php
 
