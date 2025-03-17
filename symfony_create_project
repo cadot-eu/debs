@@ -64,6 +64,11 @@ if ! command -v docker compose &> /dev/null; then
     echo -e "${RED}Erreur : Docker Compose n'est pas installé.${NC}"
     exit 1
 fi
+#vérification de yq
+if ! command -v yq &> /dev/null; then
+    echo -e "${RED}Erreur : yq n'est pas installé, installation en cours...${NC}"
+    sudo apt-get install -y yq
+fi
 
 # Vérification du paramètre
 if [ -z "$1" ]; then
@@ -87,6 +92,10 @@ cd "$PROJECT_NAME" || exit 1
 # Construction des conteneurs Docker
 echo -e "${GREEN}Construction des images Docker...${NC}"
 docker compose build --no-cache --pull
+
+echo -e "${GREEN}On définit l'url et le réseau dans compose.yams{NC}"
+#on remplace php par   php:     networks:       - hosted dans compose.yaml
+yq -y '(.services.php.networks = ["hosted"]) | (.services.database.networks = ["hosted"]) | (.networks.hosted = {"driver": "bridge", "name": "'"${PROJECT_NAME}"'"})' compose.yaml > tmp.yaml && mv tmp.yaml compose.yaml
 
 # Lancement des conteneurs
 echo -e "${GREEN}Lancement des conteneurs Docker...${NC}"
@@ -165,10 +174,7 @@ echo -e "${GREEN}Activation du debug dans le .env{NC}"
 if ! grep -q "DEBUG=" .env; then
     echo "XDEBUG_MODE=debug" >> .env
 fi
-# on créé un port au hazard
-echo -e "${GREEN}On définit l'url et le réseau dans compose.yams{NC}"
-#on remplace php par   php:     networks:       - hosted dans compose.yaml
-yq -y '(.services.php.networks = ["hosted"]) | (.services.database.networks = ["hosted"]) | (.networks.hosted = {"driver": "bridge", "name": "'"${PROJECT_NAME}"'"})' compose.yaml > tmp.yaml && mv tmp.yaml compose.yaml
+
 
 
 #si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
