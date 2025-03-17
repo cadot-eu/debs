@@ -44,6 +44,7 @@ echo -e "- Arrêt des conteneurs Docker en cours d'exécution."
 echo -e "- Reconstruction des conteneurs Docker pour prendre en compte les nouvelles dépendances."
 echo -e "- On ajoute url site dans .env ${RED}SERVER_NAME=${PROJECT_NAME}.localhost${NC}"
 echo -e "- Modification des permissions des fichiers et répertoires si nécessaire."
+echo -e "- On ajoute la variable le fichier pour XDEBUG dans .vscode"
 echo -e "- On ajoute app comme sécurisé pour git"
 echo -e "\n${YELLOW}Veuillez appuyer sur une touche pour lancer l'installation...${NC}"
 read -n 1 -s
@@ -164,6 +165,10 @@ echo -e "${GREEN}Activation du debug dans le .env{NC}"
 if ! grep -q "DEBUG=" .env; then
     echo "XDEBUG_MODE=debug" >> .env
 fi
+# on créé un port au hazard
+echo -e "${GREEN}On définit l'url et le réseau dans compose.yams{NC}"
+#on remplace php par   php:     networks:       - hosted dans compose.yaml
+yq -y '(.services.php.networks = ["hosted"]) | (.services.database.networks = ["hosted"]) | (.networks.hosted = {"driver": bridge, "name": "'${PROJECT_NAME}'"})' compose.yaml > tmp.yaml && mv tmp.yaml compose.yaml
 
 #si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
 echo -e "${GREEN}Ajout de MAILER_FROM et MAILER_FROM_NAME dans le .env{NC}"
@@ -595,5 +600,22 @@ EOF
 echo -e "${GREEN}Suppression de var${NC}"
 rm -rf var
 
+# on aloute debug listen dans .vscode/launch.json
+mkdir -p .vscode
+cat > ".vscode/launch.json" <<EOF
+{
+  "configurations": [
+    {
+      "name": "Listen for Xdebug",
+      "type": "php",
+      "request": "launch",
+      "port": 9003,
+      "pathMappings": {
+        "/app": "${workspaceFolder}"
+      }
+    }
+  ]
+}
+EOF
 # On informe qu'il faut créer le repoistory dans github
 echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
