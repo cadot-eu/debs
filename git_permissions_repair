@@ -1,0 +1,2 @@
+sudo chown -R $(whoami):$(whoami) .git
+sudo chmod -R 755 .git
