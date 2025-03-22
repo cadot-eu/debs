@@ -1,2 +1,2 @@
 caddy stop
-runsite && code . && caddy run
+runsite && caddy run

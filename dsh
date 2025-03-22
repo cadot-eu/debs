@@ -1,3 +1,15 @@
+#!/bin/bash
+
+# Récupérer le nom du dossier courant
 result=${PWD##*/}
-name=${1:-$result}    
-docker exec -i -t $name sh 
+
+# Utiliser le premier argument comme nom du conteneur, sinon utiliser le nom du dossier courant
+name=${1:-$result}
+
+# Vérifier si un deuxième paramètre est passé
+if [ -z "$1" ]; then
+  docker exec -it "$name" /bin/sh
+else
+  # Si un deuxième paramètre est donné, exécuter la commande dans le conteneur
+  docker exec -it "$result" "$1"
+fi
