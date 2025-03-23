@@ -77,7 +77,15 @@ done
 if [ ! -d "src/DataFixtures/ParametresFixtures.php" ]; then
     mkdir -p src/DataFixtures
     cp src/Command/crudmick/tpl/ParametresFixtures.incphp src/DataFixtures/ParametresFixtures.php
+    cp src/Command/crudmick/tpl/AdminFixtures.incphp src/DataFixtures/AdminFixtures.php
 fi
+# on demande un email et un mot de passe pour le superadmin
+read -p "Entrez un email pour le superadmin : " email
+read -s -p "Entrez le mot de passe : " password
+#on modifie le fichier src/DataFixtures/AdminFixtures.php
+sed -i "s/EMAIL_A_CHANGER/$email/g" src/DataFixtures/AdminFixtures.php
+sed -i "s/PASSWORD_A_CHANGER/$password/g" src/DataFixtures/AdminFixtures.php
+
 mkdir backup_config
 mv config/packages/security.yaml  backup_config/.
 cp src/Command/crudmick/tpl/security.yaml config/packages/security.yaml
@@ -222,3 +230,4 @@ EOF
 
 # On informe qu'il faut créer le repoistory dans github
 echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
+echo -e "${GREEN}Il faudra modifier la database dans .env et prendre la bonne image en conséquence{NC}"
