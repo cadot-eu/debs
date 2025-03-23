@@ -1,0 +1,47 @@
+#!/bin/bash
+set -e
+
+# Nom du répertoire actuel
+REPO_NAME=$(basename "$PWD")
+echo "Nom du répertoire actuel : $REPO_NAME"
+
+# Chemin vers docker-compose.yaml
+COMPOSE_FILE="compose.yaml"
+
+# Vérifier si le service existe déjà avec grep
+if grep -q "$REPO_NAME" "$COMPOSE_FILE"; then
+    echo "Le service $REPO_NAME existe déjà dans $COMPOSE_FILE."
+    # On récupère son port
+    PORT=$(yq e ".services.$REPO_NAME.ports[0]" "$COMPOSE_FILE" | cut -d':' -f1)
+else
+    echo "Ajout du service $REPO_NAME dans $COMPOSE_FILE..."
+    # Générer un port aléatoire entre 20000 et 30000
+    PORT=$(shuf -i 20000-30000 -n 1)
+    # Ajouter le service au fichier compose.yaml par sed
+    sed -i "/services:/a\ \ $REPO_NAME:\n\ \ \ \ image: symfonymick-dev_imagick\n\ \ \ \ container_name: $REPO_NAME\n\ \ \ \ volumes:\n\ \ \ \ \ \ - .:/app\n\ \ \ \ restart: always\n\ \ \ \ ports:\n\ \ \ \ \ \ - $PORT:80" "$COMPOSE_FILE"
+fi
+
+# Chemin vers le Caddyfile
+CADDYFILE="Caddyfile"
+
+# Vérifier si le fichier Caddyfile existe, sinon le créer
+if [ ! -f "$CADDYFILE" ]; then
+    echo "Création du fichier $CADDYFILE..."
+    cat <<EOF > "$CADDYFILE"
+{
+   email letsencrypt@cadot.eu
+   acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+$REPO_NAME.localhost {
+   encode gzip zstd
+   reverse_proxy localhost:$PORT
+   header {
+      Cache-Control public, max-age=31536000
+   }
+}
+
+EOF
+fi
+
+echo "✅ Configuration terminée !"

@@ -1,2 +1,18 @@
 caddy stop
-runsite && caddy run
+
+# run docker compose and change DIR in docker-compose by current directory
+result=${PWD##*/}
+if [ ! -f docker-compose.yml ]
+then
+echo -e "services:\n  ${result}:\n    image: symfonymick-dev_imagick\n    container_name: ${result}\n    volumes:\n      - .:/app\n    restart: always\n    ports:\n      - 80\n " >>docker-compose.yml
+fi
+docker compose down --remove-orphans
+docker compose up -d
+port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}} {{end}}' ${result})
+port=$(docker inspect ${result} | grep -o '"HostPort": "[0-9]*"' | grep -o '[0-9]*' | head -n1)
+echo "https://${result}.localhost"
+
+echo -e "{\nemail letsencrypt@cadot.eu\nacme_ca https://acme-staging-v02.api.letsencrypt.org/directory\n}\n\n${result}.localhost {\nencode gzip zstd\nreverse_proxy localhost:${port}\nheader {\nCache-Control "public, max-age=31536000"\n}\n}\n" >Caddyfile
+
+
+caddy run

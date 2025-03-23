@@ -3,13 +3,19 @@
 # Récupérer le nom du dossier courant
 result=${PWD##*/}
 
+# Vérifier si l'option `-c` est fournie
+if [ "$1" == "-c" ]; then
+  shift  # Supprimer `-c` des arguments
+  docker exec -it "$result" sh -c "$@"
+  exit 0
+fi
+
 # Utiliser le premier argument comme nom du conteneur, sinon utiliser le nom du dossier courant
 name=${1:-$result}
 
-# Vérifier si un deuxième paramètre est passé
-if [ -z "$1" ]; then
-  docker exec -it "$name" /bin/sh
+# Vérifier si des commandes supplémentaires sont passées
+if [ "$#" -gt 1 ]; then
+  docker exec -it "$result" "$@"
 else
-  # Si un deuxième paramètre est donné, exécuter la commande dans le conteneur
-  docker exec -it "$result" "$1"
+  docker exec -it "$name" /bin/sh
 fi
