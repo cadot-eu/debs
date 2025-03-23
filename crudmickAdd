@@ -55,39 +55,38 @@ twig/string-extra \
 docker exec -it "${dossier}" composer require --dev \
 symfony/debug-pack \
 symfony/maker-bundle \
-symfony/phpunit-bridge  \
-symfony/phpunit-bridge \
-phpunit/phpunit \
-doctrine/doctrine-fixtures-bundle \
-squizlabs/php_codesniffer \
-zenstruck/foundry --no-interaction
+symfony/phpunit-bridge  --no-interaction
+
+docker exec -it "${dossier}" composer global require squizlabs/php_codesniffer --no-interaction
+docker exec -it "${dossier}" composer require --dev doctrine/doctrine-fixtures-bundle -W --no-interaction
+docker exec -it "${dossier}" composer require --dev zenstruck/foundry --no-interaction
 
 #installation de crudmick
 if [ ! -d "src/Command/crudmick" ]; then
     mkdir -p src/Command
     git clone git@github.com:cadot-eu/crudmick.git src/Command/crudmick
 fi
-# on attend la fin du git pull
-cd src/Command/crudmick
-while ! git pull; do
+# on attend la fin du git clone
+while [ -z "$(docker inspect -f '{{.State.Running}}' "${dossier}")" ]; do
     sleep 1
 done
-# on attend la fin du clone
-while [ ! -d "src/Command/crudmick" ]; do
-    sleep 1
-done
+
+
+
 
 if [ ! -d "src/DataFixtures/ParametresFixtures.php" ]; then
     mkdir -p src/DataFixtures
     cp src/Command/crudmick/tpl/ParametresFixtures.incphp src/DataFixtures/ParametresFixtures.php
 fi
 mkdir backup_config
-@mv config/package/security.yaml backup_config/.
+mv config/packages/security.yaml  backup_config/.
 cp src/Command/crudmick/tpl/security.yaml config/packages/security.yaml
 cp src/Command/crudmick/tpl/Parametres.incphp src/Entity/Parametres.php
 cp src/Command/crudmick/tpl/ParametresRepository.incphp src/Repository/ParametresRepository.php
 
-@mv src/Controller/SecurityController.php src/Command/crudmick/tpl/.
+if [ ! -d "src/Controller/SecurityController.php" ]; then
+    mv src/Controller/SecurityController.php backup_config/.
+fi
 cp src/Command/crudmick/tpl/SecurityController.incphp src/Controller/SecurityController.php
 
 cp src/Command/crudmick/tpl/ResetPasswordController.incphp src/Controller/ResetPasswordController.php
@@ -95,12 +94,14 @@ cp src/Command/crudmick/tpl/User.incphp src/Entity/User.php
 cp src/Command/crudmick/tpl/ResetPasswordRequest.incphp src/Entity/ResetPasswordRequest.php
 cp src/Command/crudmick/tpl/UserRepository.incphp src/Repository/UserRepository.php
 
-mkdir -p templates/security
+if [ ! -d "templates/security" ]; then
+    mkdir -p templates/security
+fi
 cp src/Command/crudmick/tpl/login.html.twig templates/security/login.html.twig
 
 cp src/Command/crudmick/tpl/liip_imagine.yaml config/packages/liip_imagine.yaml
 
-@mv config/packages/monolog.yaml backup_config/monolog.yaml
+mv config/packages/monolog.yaml backup_config/monolog.yaml
 cp src/Command/crudmick/tpl/monolog.yaml config/packages/monolog.yaml
 
 # on configure liip imagine
@@ -191,7 +192,9 @@ git submodule update --init --recursive
 docker exec -it "${dossier}" php bin/console d:s:u --force
 
 docker exec -it "${dossier}" php bin/console importmap:require bootstrap stimulus-use leaflet sweetalert2 imask bigpicture sortable notyf swiper swiper/swiper.css
-docker exec -it "${dossier}" mkdir templates/admin
+if [ ! -d "templates/admin" ]; then
+    docker exec -it "${dossier}" mkdir templates/admin
+fi
 docker exec -it "${dossier}" cp templates/base.html.twig templates/admin/.
 docker exec -it "${dossier}" php bin/console d:f:l -n
 if [ ! -d "src/Controller/UserController.php" ]; then
