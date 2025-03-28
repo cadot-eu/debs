@@ -53,8 +53,3 @@ $REPO_NAME.localhost {
 # Formatage du fichier Caddyfile
 caddy fmt --overwrite
 
-# Redémarrer les services
-caddy stop
-dc down
-dc up -d
-caddy run

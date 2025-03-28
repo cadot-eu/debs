@@ -1,42 +1,21 @@
 #!/bin/bash
 
-# Fonction d'aide pour afficher comment utiliser le script.
-function afficher_aide {
-    echo "Utilisation: $0 [NOM_DU_DOCKER] [-n NOMBRE_DE_LOGS]"
-    echo "Affiche les derniers logs du conteneur Docker spécifié avec un saut de ligne après [date time]."
-    echo "Options:"
-    echo "  -n NOMBRE_DE_LOGS   Nombre de logs à afficher (par défaut: 10)"
-    echo "  -h                  Afficher cette aide"
-    exit 1
-}
-
 # Variables par défaut
 nombre_de_logs=10
-nom_du_docker=$(basename "$(pwd)") # Nom du répertoire en cours par défaut
-
-# Analyser les options de ligne de commande
-while getopts "n:h" option; do
-    case $option in
-        n)
-            nombre_de_logs=$OPTARG
-            ;;
-        h)
-            afficher_aide
-            ;;
-        *)
-            echo "Option invalide: -$OPTARG"
-            afficher_aide
-            ;;
-    esac
-done
-
-# Décalage des options analysées
-shift $((OPTIND - 1))
+nom_du_docker=""
 
 # Si un argument non optionnel est fourni, il s'agit du nom du conteneur Docker
-if [ $# -eq 1 ]; then
+if [ -n "$1" ] && [ "$1" != "-f" ]; then
     nom_du_docker=$1
+else
+    nom_du_docker=$(basename "$(pwd)") # Nom du répertoire en cours par défaut si aucun argument n'est fourni
 fi
 
-# Récupérer les derniers logs du conteneur Docker et ajouter un saut de ligne après [date time]
-docker logs --tail="$nombre_de_logs" "$nom_du_docker" 2>&1 | sed 's/\r$/\r\n/' | sed 's/PHP Fatal error:/\nPHP Fatal error:/' | sed 's/\\n/\n/g' | cat -T | ccze -A
+# Option -f pour affichage continue
+if [ "$1" == "-f" ] || [ "$2" == "-f" ]; then
+    docker logs --follow --tail="$nombre_de_logs" "$nom_du_docker" 2>&1 | sed 's/\r$/\r\n/' | sed 's/PHP Fatal error:/\nPHP Fatal error:/' | sed 's/\\n/\n/g' | ccze -A
+else
+    # Récupérer les derniers logs du conteneur Docker et ajouter un saut de ligne après [date time]
+    docker logs --tail="$nombre_de_logs" "$nom_du_docker" 2>&1 | sed 's/\r$/\r\n/' | sed 's/PHP Fatal error:/\nPHP Fatal error:/' | sed 's/\\n/\n/g' | ccze -A
+fi
+
