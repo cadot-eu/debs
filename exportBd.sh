@@ -37,7 +37,7 @@ echo "📤 Sauvegarde de la base '$DB_NAME' depuis le conteneur '$CONTAINER_NAME
 
 # 📌 Export de la base de données avec authentification
 export PGPASSWORD=$PG_PASSWORD
-docker exec -t "$CONTAINER_NAME" pg_dump -U "$PG_USER" -d "$DB_NAME" > "$DB_BACKUP_FILE" 2> "error_${DB_NAME}.log"
+docker exec -t "$CONTAINER_NAME" pg_dump -U "$PG_USER" -d "$DB_NAME" > "$DB_BACKUP_FILE" 2> "error_${DB_NAME}_${TIMESTAMP}.log"
 
 if [[ $? -eq 0 ]]; then
     echo "✅ Base de données sauvegardée dans '$DB_BACKUP_FILE'."
@@ -49,7 +49,7 @@ fi
 # 📌 Sauvegarde du dossier public/uploads
 if [[ -d "public/uploads" ]]; then
     echo "📦 Sauvegarde des fichiers 'public/uploads'..."
-    zip -r "$UPLOADS_BACKUP_FILE" public/uploads > "errorFichiers_${DB_NAME}.log"
+    zip -r "$UPLOADS_BACKUP_FILE" public/uploads 2> "errorFichiers_${DB_NAME}_${TIMESTAMP}.log"
 
     if [[ $? -eq 0 ]]; then
         echo "✅ Uploads sauvegardés dans '$UPLOADS_BACKUP_FILE'."
