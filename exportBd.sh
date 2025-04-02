@@ -5,7 +5,7 @@ CONTAINER_NAME=${1:-}
 DB_NAME=${2:-}
 PG_USER=${3:-}
 PG_PASSWORD=${4:-}
-
+TIMESTAMP=${5:-}
 # 📌 Demande interactive si les paramètres ne sont pas fournis
 if [[ -z "$CONTAINER_NAME" ]]; then
     read -p "Nom du conteneur PostgreSQL (par défaut : database) : " CONTAINER_NAME
@@ -25,8 +25,11 @@ if [[ -z "$PG_PASSWORD" ]]; then
     echo ""
 fi
 
+if [[ -z "$TIMESTAMP" ]]; then
+    TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+fi
+
 # 📌 Définir les noms des fichiers de sauvegarde
-TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 DB_BACKUP_FILE="backup_${DB_NAME}_${TIMESTAMP}.sql"
 UPLOADS_BACKUP_FILE="uploads_backup_${DB_NAME}_${TIMESTAMP}.zip"
 
@@ -34,7 +37,7 @@ echo "📤 Sauvegarde de la base '$DB_NAME' depuis le conteneur '$CONTAINER_NAME
 
 # 📌 Export de la base de données avec authentification
 export PGPASSWORD=$PG_PASSWORD
-docker exec -t "$CONTAINER_NAME" pg_dump -U "$PG_USER" -d "$DB_NAME" > "$DB_BACKUP_FILE" 2> "error.log"
+docker exec -t "$CONTAINER_NAME" pg_dump -U "$PG_USER" -d "$DB_NAME" > "$DB_BACKUP_FILE" 2> "error_${DB_NAME}.log"
 
 if [[ $? -eq 0 ]]; then
     echo "✅ Base de données sauvegardée dans '$DB_BACKUP_FILE'."
@@ -46,7 +49,7 @@ fi
 # 📌 Sauvegarde du dossier public/uploads
 if [[ -d "public/uploads" ]]; then
     echo "📦 Sauvegarde des fichiers 'public/uploads'..."
-    zip -r "$UPLOADS_BACKUP_FILE" public/uploads > /dev/null
+    zip -r "$UPLOADS_BACKUP_FILE" public/uploads > "errorFichiers_${DB_NAME}.log"
 
     if [[ $? -eq 0 ]]; then
         echo "✅ Uploads sauvegardés dans '$UPLOADS_BACKUP_FILE'."
