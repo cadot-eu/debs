@@ -210,24 +210,6 @@ if [ ! -d "src/Controller/UserController.php" ]; then
 fi
 docker exec -it "${dossier}" php bin/console crud
 
-# on aloute debug listen dans .vscode/launch.json
-mkdir -p .vscode
-cat > ".vscode/launch.json" <<EOF
-{
-  "configurations": [
-    {
-      "name": "Listen for Xdebug",
-      "type": "php",
-      "request": "launch",
-      "port": 9003,
-      "pathMappings": {
-        "/app": "${workspaceFolder}"
-      }
-    }
-  ]
-}
-EOF
-
 # On informe qu'il faut créer le repoistory dans github
 echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
 echo -e "${GREEN}Il faudra modifier la database dans .env et prendre la bonne image en conséquence{NC}"
