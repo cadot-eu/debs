@@ -25,6 +25,9 @@ PG_USER="$3"
 PG_PASSWORD="$4"
 SELECTED_FILE="$5"
 
+DB_EXISTS=$(docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | tr -d '[:space:]')
+
+
 if [[ "$DB_EXISTS" == "1" ]]; then
     echo "⚠️ La base '$DB_NAME' existe déjà. Suppression en cours..."
     docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "DROP DATABASE \"$DB_NAME\";"
