@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 📌 Vérification du nombre d'arguments
-if [[ $# -lt 6 ]]; then
+if [[ $# -lt 7 ]]; then
     echo "❌ Trop peu de paramètres. Vous devez fournir :"
     echo " 1. Nom du conteneur PostgreSQL"
     echo " 2. Nom de la base de données"
@@ -9,6 +9,7 @@ if [[ $# -lt 6 ]]; then
     echo " 4. Mot de passe PostgreSQL"
     echo " 5. Horodatage (facultatif)"
     echo " 6. Répertoire de destination"
+    echo " 7. Répertoire du site"
     exit 1
 fi
 
@@ -19,6 +20,7 @@ PG_USER=${3:-}
 PG_PASSWORD=${4:-}
 TIMESTAMP=${5:-}
 DEST_DIR=${6:-}
+SITE_DIR=${7:-}
 
 # 📌 Demande interactive si les paramètres ne sont pas fournis
 if [[ -z "$CONTAINER_NAME" ]]; then
@@ -47,6 +49,10 @@ if [[ -z "$DEST_DIR" ]]; then
     read -p "Répertoire de destination : " DEST_DIR
 fi
 
+if [[ -z "$SITE_DIR" ]]; then
+    read -p "Répertoire du site : " SITE_DIR
+fi
+
 # 📌 Vérification et création du répertoire de destination si nécessaire
 mkdir -p "$DEST_DIR"
 
@@ -68,9 +74,11 @@ else
 fi
 
 # 📌 Sauvegarde du dossier public/uploads
-if [[ -d "public/uploads" ]]; then
-    echo "📦 Sauvegarde des fichiers 'public/uploads'..."
-    zip -r "$UPLOADS_BACKUP_FILE" public/uploads 2> "${DEST_DIR}/errorFichiers_${DB_NAME}_${TIMESTAMP}.log"
+UPLOADS_DIR="${SITE_DIR}/public/uploads"
+
+if [[ -d "$UPLOADS_DIR" ]]; then
+    echo "📦 Sauvegarde des fichiers '$UPLOADS_DIR'..."
+    zip -r "$UPLOADS_BACKUP_FILE" "$UPLOADS_DIR" 2> "${DEST_DIR}/errorFichiers_${DB_NAME}_${TIMESTAMP}.log"
     
     if [[ $? -eq 0 ]]; then
         echo "✅ Uploads sauvegardés dans '$UPLOADS_BACKUP_FILE'."
@@ -79,7 +87,7 @@ if [[ -d "public/uploads" ]]; then
         exit 1
     fi
 else
-    echo "⚠️ Le dossier 'public/uploads' n'existe pas. Aucun fichier sauvegardé."
+    echo "⚠️ Le dossier '$UPLOADS_DIR' n'existe pas. Aucun fichier sauvegardé."
 fi
 
 echo "🎉 Sauvegarde terminée avec succès !"
