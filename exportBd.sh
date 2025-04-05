@@ -6,8 +6,8 @@ if [[ $# -lt 7 ]]; then
     echo " 1. Nom du conteneur PostgreSQL"
     echo " 2. Nom de la base de données"
     echo " 3. Nom d'utilisateur PostgreSQL"
-    echo " 4. Mot de passe PostgreSQL"
-    echo " 5. Horodatage (facultatif)"
+    echo " 4. Mot de passe PostgreSQL (avec \\ sur caractère spéciaux)"
+    echo " 5. jour ou date"
     echo " 6. Répertoire de destination"
     echo " 7. Répertoire du site"
     exit 1
@@ -22,39 +22,6 @@ TIMESTAMP=${5:-}
 DEST_DIR=${6:-}
 SITE_DIR=${7:-}
 
-# 📌 Demande interactive si les paramètres ne sont pas fournis
-if [[ -z "$CONTAINER_NAME" ]]; then
-    read -p "Nom du conteneur PostgreSQL (par défaut : database) : " CONTAINER_NAME
-    CONTAINER_NAME=${CONTAINER_NAME:-database}
-fi
-
-if [[ -z "$DB_NAME" ]]; then
-    read -p "Nom de la base de données : " DB_NAME
-fi
-
-if [[ -z "$PG_USER" ]]; then
-    read -p "Nom d'utilisateur PostgreSQL : " PG_USER
-fi
-
-if [[ -z "$PG_PASSWORD" ]]; then
-    read -sp "Mot de passe PostgreSQL : " PG_PASSWORD
-    echo ""
-fi
-
-if [[ -z "$TIMESTAMP" ]]; then
-    TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-fi
-
-if [[ -z "$DEST_DIR" ]]; then
-    read -p "Répertoire de destination : " DEST_DIR
-fi
-
-if [[ -z "$SITE_DIR" ]]; then
-    read -p "Répertoire du site : " SITE_DIR
-fi
-
-# 📌 Vérification et création du répertoire de destination si nécessaire
-mkdir -p "$DEST_DIR"
 
 # 📌 Définir les noms des fichiers de sauvegarde
 DB_BACKUP_FILE="${DEST_DIR}/backup_${DB_NAME}_${TIMESTAMP}.sql"
@@ -65,6 +32,7 @@ echo "📤 Sauvegarde de la base '$DB_NAME' depuis le conteneur '$CONTAINER_NAME
 # 📌 Export de la base de données avec authentification
 export PGPASSWORD=$PG_PASSWORD
 docker exec -t "$CONTAINER_NAME" pg_dump -U "$PG_USER" -d "$DB_NAME" > "$DB_BACKUP_FILE" 2> "${DEST_DIR}/error_${DB_NAME}_${TIMESTAMP}.log"
+echo 'docker exec -t "${CONTAINER_NAME}" pg_dump -U "${PG_USER}" -d "${DB_NAME}" > "${DB_BACKUP_FILE}" '
 
 if [[ $? -eq 0 ]]; then
     echo "✅ Base de données sauvegardée dans '$DB_BACKUP_FILE'."
