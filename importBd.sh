@@ -1,16 +1,38 @@
 #!/bin/bash
 
 # 📌 Vérification des arguments
-if [[ $# -lt 5 ]]; then
-    echo "❌ Usage: $0 NOM_CONTENEUR NOM_BDD NOM_UTILISATEUR MOT_DE_PASSE FICHIER_SQL"
+read -p "Nom du conteneur PostgreSQL (par défaut: rss-db): " CONTAINER_NAME
+CONTAINER_NAME=${CONTAINER_NAME:-"rss-db"}
+
+read -p "Nom de la base de données (par défaut: dbrss): " DB_NAME
+DB_NAME=${DB_NAME:-"dbrss"}
+
+read -p "Nom de l'utilisateur PostgreSQL (par défaut: rss): " PG_USER
+PG_USER=${PG_USER:-"rss"}
+
+read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
+
+select_file=$(ls *.sql | nl)
+if [ -z "$select_file" ]; then
+    echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
+    exit 1
+fi
+
+echo "$select_file"
+read -p "Numéro du fichier SQL ou dump à importer: " file_number
+
+SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
+
+if [ -z "$SELECTED_FILE" ]; then
+    echo "❌ Sélection invalide. Veuillez choisir un numéro de fichier correct."
     exit 1
 fi
 
 # 📌 Assignation des arguments
-CONTAINER_NAME="$1"
-DB_NAME="$2"
-PG_USER="$3"
-PG_PASSWORD="$4"
+CONTAINER_NAME=${1:-"rss-db"}
+DB_NAME=${2:-"dbrss"}
+PG_USER=${3:-"rss"}
+PG_PASSWORD=""
 SELECTED_FILE="$5"
 
 # 📌 Vérifier si le fichier d'import existe

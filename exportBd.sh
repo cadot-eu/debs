@@ -1,16 +1,21 @@
 #!/bin/bash
 
-# 📌 Vérification du nombre d'arguments
+# 📌 Demander les paramètres si ils ne sont pas fournis
 if [[ $# -lt 7 ]]; then
-    echo "❌ Trop peu de paramètres. Vous devez fournir :"
-    echo " 1. Nom du conteneur PostgreSQL"
-    echo " 2. Nom de la base de données"
-    echo " 3. Nom d'utilisateur PostgreSQL"
-    echo " 4. Mot de passe PostgreSQL (avec \\ sur caractère spéciaux)"
-    echo " 5. jour ou date"
-    echo " 6. Répertoire de destination"
-    echo " 7. Répertoire du site"
-    exit 1
+    read -p "Nom du conteneur PostgreSQL (par défaut: rss-db): " CONTAINER_NAME
+    CONTAINER_NAME=${CONTAINER_NAME:-"rss-db"}
+    read -p "Nom de la base de données (par défaut: dbrss): " DB_NAME
+    DB_NAME=${DB_NAME:-"dbrss"}
+    read -p "Nom de l'utilisateur PostgreSQL (par défaut: rss): " PG_USER
+    PG_USER=${PG_USER:-"rss"}
+    read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
+    PG_PASSWORD=${PG_PASSWORD:-""}
+    read -p "Date et heure de sauvegarde (par défaut: maintenant): " TIMESTAMP
+    TIMESTAMP=${TIMESTAMP:-$(date +"%Y%m%d%H%M%S")}
+    read -p "Dossier de destination (par défaut: dir en cours): " DEST_DIR
+    DEST_DIR=${DEST_DIR:-$(pwd)}
+    read -p "Dossier du site pour sauvegardé fichier rss/public/uploads(par défaut: rss): " SITE_DIR
+    SITE_DIR=${SITE_DIR:-"rss"}
 fi
 
 # 📌 Récupérer les paramètres ou demander à l'utilisateur
