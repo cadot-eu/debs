@@ -58,7 +58,7 @@ mkdir -p "$DEST_DIR"
 
 # 📌 Définir les noms des fichiers de sauvegarde
 DB_BACKUP_FILE="${DEST_DIR}/backup_${DB_NAME}_${TIMESTAMP}.sql"
-UPLOADS_BACKUP_FILE="${DEST_DIR}/uploads_backup_${DB_NAME}_${TIMESTAMP}.zip"
+UPLOADS_BACKUP_FILE="${DEST_DIR}/uploads_backup_${DB_NAME}_${TIMESTAMP}.tar.gz"
 
 echo "📤 Sauvegarde de la base '$DB_NAME' depuis le conteneur '$CONTAINER_NAME'..."
 
@@ -78,7 +78,7 @@ UPLOADS_DIR="${SITE_DIR}/public/uploads"
 
 if [[ -d "$UPLOADS_DIR" ]]; then
     echo "📦 Sauvegarde des fichiers '$UPLOADS_DIR'..."
-    zip -r "$UPLOADS_BACKUP_FILE" "$UPLOADS_DIR" 2> "${DEST_DIR}/errorFichiers_${DB_NAME}_${TIMESTAMP}.log"
+    tar -czf "$UPLOADS_BACKUP_FILE" -C "$SITE_DIR" "public/uploads" 2> "${DEST_DIR}/errorFichiers_${DB_NAME}_${TIMESTAMP}.log"
     
     if [[ $? -eq 0 ]]; then
         echo "✅ Uploads sauvegardés dans '$UPLOADS_BACKUP_FILE'."
