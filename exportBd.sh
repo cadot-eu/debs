@@ -11,21 +11,23 @@ if [[ $# -lt 7 ]]; then
     read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
     PG_PASSWORD=${PG_PASSWORD:-""}
     read -p "Date et heure de sauvegarde (par défaut: maintenant): " TIMESTAMP
-    TIMESTAMP=${TIMESTAMP:-$(date +"%Y%m%d%H%M%S")}
+    if [[ -z "$TIMESTAMP" ]]; then
+        TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+    fi
     read -p "Dossier de destination (par défaut: dir en cours): " DEST_DIR
-    DEST_DIR=${DEST_DIR:-$(pwd)}
+    DEST_DIR=${DEST_DIR:-.}
     read -p "Dossier du site pour sauvegardé fichier rss/public/uploads(par défaut: rss): " SITE_DIR
     SITE_DIR=${SITE_DIR:-"rss"}
 fi
 
 # 📌 Récupérer les paramètres ou demander à l'utilisateur
-CONTAINER_NAME=${1:-}
-DB_NAME=${2:-}
-PG_USER=${3:-}
-PG_PASSWORD=${4:-}
-TIMESTAMP=${5:-}
-DEST_DIR=${6:-}
-SITE_DIR=${7:-}
+CONTAINER_NAME=${1:-$CONTAINER_NAME}
+DB_NAME=${2:-$DB_NAME}
+PG_USER=${3:-$PG_USER}
+PG_PASSWORD=${4:-$PG_PASSWORD}
+TIMESTAMP=${5:-$TIMESTAMP}
+DEST_DIR=${6:-$DEST_DIR}
+SITE_DIR=${7:-$SITE_DIR}
 
 
 # 📌 Définir les noms des fichiers de sauvegarde

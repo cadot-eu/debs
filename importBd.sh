@@ -37,11 +37,11 @@ if [ -z "$SELECTED_FILE" ]; then
 fi
 
 # 📌 Assignation des arguments
-CONTAINER_NAME=${1:-"rss-db"}
-DB_NAME=${2:-"dbrss"}
-PG_USER=${3:-"rss"}
-PG_PASSWORD=""
-SELECTED_FILE="$5"
+CONTAINER_NAME=${1:-$CONTAINER_NAME}
+DB_NAME=${2:-$DB_NAME}
+PG_USER=${3:-$PG_USER}
+PG_PASSWORD=${4:-$PG_PASSWORD}
+SELECTED_FILE=${5:-$SELECTED_FILE}
 
 # 📌 Vérifier si le fichier d'import existe
 if [[ ! -f "$SELECTED_FILE" ]]; then
