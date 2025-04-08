@@ -1,14 +1,22 @@
 #!/bin/bash
 
 # 📌 Vérification des arguments
-read -p "Nom du conteneur PostgreSQL (par défaut: rss-db): " CONTAINER_NAME
-CONTAINER_NAME=${CONTAINER_NAME:-"rss-db"}
+# 📌 Récupère le nom du dossier courant
+DEFAULT_NAME=$(basename "$PWD")
+# 📌 Valeurs par défaut basées sur le nom du dossier
+DEFAULT_CONTAINER="${DEFAULT_NAME}-db"
+DEFAULT_DB="db${DEFAULT_NAME}"
+DEFAULT_USER="${DEFAULT_NAME}"
 
-read -p "Nom de la base de données (par défaut: dbrss): " DB_NAME
-DB_NAME=${DB_NAME:-"dbrss"}
+# 📌 Demande d'infos avec valeurs par défaut intelligentes
+read -p "Nom du conteneur PostgreSQL (par défaut: ${DEFAULT_CONTAINER}): " CONTAINER_NAME
+CONTAINER_NAME=${CONTAINER_NAME:-$DEFAULT_CONTAINER}
 
-read -p "Nom de l'utilisateur PostgreSQL (par défaut: rss): " PG_USER
-PG_USER=${PG_USER:-"rss"}
+read -p "Nom de la base de données (par défaut: ${DEFAULT_DB}): " DB_NAME
+DB_NAME=${DB_NAME:-$DEFAULT_DB}
+
+read -p "Nom de l'utilisateur PostgreSQL (par défaut: ${DEFAULT_USER}): " PG_USER
+PG_USER=${PG_USER:-$DEFAULT_USER}
 
 read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
 
