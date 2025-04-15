@@ -1,8 +1,14 @@
 #!/bin/bash
 
 # Récupère APP_ENV depuis le fichier .env
-APP_ENV=$(grep -E '^APP_ENV=' .env | cut -d '=' -f2)
+if [ -f .env.local ]; then
+  APP_ENV=$(grep -E '^APP_ENV=' .env.local | cut -d '=' -f2)
+fi
 
+# Si non défini via .env.local, on essaie .env
+if [ -z "$APP_ENV" ]; then
+  APP_ENV=$(grep -E '^APP_ENV=' .env | cut -d '=' -f2)
+fi
 # Vérifie qu'on a bien trouvé APP_ENV
 if [ -z "$APP_ENV" ]; then
     echo "❌ Impossible de trouver APP_ENV dans .env"
