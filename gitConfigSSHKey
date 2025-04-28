@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Définir les couleurs pour une meilleure lisibilité
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Fonction pour afficher un message d'erreur et quitter
+error_exit() {
+    echo -e "\033[0;31mErreur: $1\033[0m" >&2
+    exit 1
+}
+
+# Vérifier si nous sommes dans un dépôt Git
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    error_exit "Ce script doit être exécuté dans un dépôt Git"
+fi
+
+# Trouver toutes les clés privées dans ~/.ssh
+echo -e "${BLUE}Recherche des clés SSH dans ~/.ssh...${NC}"
+keys=()
+while IFS= read -r file; do
+    # Vérifier si le fichier est une clé privée (sans extension .pub)
+    if [[ -f "$file" && ! "$file" == *.pub && ! "$file" == known_hosts && ! "$file" == config ]]; then
+        # Lire la première ligne pour vérifier si c'est une clé SSH
+        first_line=$(head -n 1 "$file")
+        if [[ "$first_line" == *"PRIVATE KEY"* ]]; then
+            keys+=("$file")
+        fi
+    fi
+done < <(find ~/.ssh -type f)
+
+# Vérifier si des clés ont été trouvées
+if [ ${#keys[@]} -eq 0 ]; then
+    error_exit "Aucune clé SSH trouvée dans ~/.ssh"
+fi
+
+# Afficher les clés disponibles
+echo -e "${BLUE}Clés SSH disponibles:${NC}"
+for i in "${!keys[@]}"; do
+    key_type=$(ssh-keygen -l -f "${keys[$i]}" 2>/dev/null | awk '{print $2}')
+    key_comment=$(ssh-keygen -l -f "${keys[$i]}" 2>/dev/null | awk '{$1=$2=$3=$4=""; print $0}' | sed 's/^ *//')
+    
+    if [ -n "$key_type" ]; then
+        echo -e "$((i+1)). ${GREEN}${keys[$i]}${NC} ($key_type) $key_comment"
+    else
+        echo -e "$((i+1)). ${GREEN}${keys[$i]}${NC}"
+    fi
+done
+
+# Demander à l'utilisateur de choisir une clé
+echo -e "${BLUE}Entrez le numéro de la clé à utiliser:${NC}"
+read -r selection
+
+# Valider la sélection
+if ! [[ "$selection" =~ ^[0-9]+$ ]]; then
+    error_exit "Veuillez entrer un numéro valide"
+fi
+
+selection=$((selection-1))
+
+if [ "$selection" -lt 0 ] || [ "$selection" -ge "${#keys[@]}" ]; then
+    error_exit "Sélection invalide"
+fi
+
+selected_key="${keys[$selection]}"
+echo -e "${BLUE}Clé sélectionnée: ${GREEN}$selected_key${NC}"
+
+# Configurer Git pour utiliser cette clé dans ce dépôt
+git config core.sshCommand "ssh -i $selected_key"
+echo -e "${GREEN}Git configuré pour utiliser la clé: $selected_key${NC}"
+echo -e "${BLUE}Configuration appliquée au dépôt courant uniquement.${NC}"
+
+# Afficher la configuration actuelle pour confirmation
+echo -e "${BLUE}Configuration SSH actuelle pour ce dépôt:${NC}"
+git config --get core.sshCommand
