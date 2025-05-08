@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Vérifie que le chemin du dossier a été fourni
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 /chemin/vers/le/dossier/de/logs"
+    exit 1
+fi
+
+LOG_DIR="$1"
+
+# Vérifie que le dossier existe
+if [ ! -d "$LOG_DIR" ]; then
+    echo "Erreur : le dossier spécifié n'existe pas."
+    exit 1
+fi
+
+# Fichier temporaire pour stocker les résultats
+TEMP_FILE=$(mktemp)
+
+# Recherche de toutes les URL qui génèrent des erreurs 404
+find "$LOG_DIR" -name "*.log" -type f -exec grep -l "NotFoundHttpException" {} \; | while read -r log_file; do
+    grep "NotFoundHttpException" "$log_file" | grep -o '"GET [^"]*"' | sed 's/"GET \(.*\)"/\1/' >> "$TEMP_FILE"
+done
+
+# Compte les occurrences de chaque URL
+declare -A url_counts
+while read -r url; do
+    if [ -n "$url" ]; then
+        if [ -z "${url_counts[$url]}" ]; then
+            url_counts[$url]=1
+        else
+            url_counts[$url]=$((url_counts[$url] + 1))
+        fi
+    fi
+done < "$TEMP_FILE"
+
+# Prépare la sortie dans un format trié
+echo "URL                                                          Nombre d'erreurs 404"
+echo "--------------------------------------------------------------------------"
+
+# Trie les résultats par nombre d'occurrences (ordre décroissant)
+for url in "${!url_counts[@]}"; do
+    echo "${url_counts[$url]} $url"
+done | sort -nr | while read -r count url; do
+    printf "%-60s %d\n" "$url" "$count"
+done
+
+# Supprime le fichier temporaire
+rm "$TEMP_FILE"
