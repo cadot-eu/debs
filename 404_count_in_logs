@@ -16,34 +16,27 @@ fi
 
 # Fichier temporaire pour stocker les résultats
 TEMP_FILE=$(mktemp)
+URL_COUNT_FILE=$(mktemp)
 
 # Recherche de toutes les URL qui génèrent des erreurs 404
 find "$LOG_DIR" -name "*.log" -type f -exec grep -l "NotFoundHttpException" {} \; | while read -r log_file; do
     grep "NotFoundHttpException" "$log_file" | grep -o '"GET [^"]*"' | sed 's/"GET \(.*\)"/\1/' >> "$TEMP_FILE"
 done
 
-# Compte les occurrences de chaque URL
-declare -A url_counts
-while read -r url; do
-    if [ -n "$url" ]; then
-        if [ -z "${url_counts[$url]}" ]; then
-            url_counts[$url]=1
-        else
-            url_counts[$url]=$((url_counts[$url] + 1))
-        fi
-    fi
-done < "$TEMP_FILE"
+# Compter les occurrences de chaque URL en utilisant sort et uniq
+# Cette approche évite les problèmes avec les caractères spéciaux dans les URLs
+sort "$TEMP_FILE" | uniq -c | sort -nr > "$URL_COUNT_FILE"
 
-# Prépare la sortie dans un format trié
+# Affiche les résultats avec un format approprié
 echo "URL                                                          Nombre d'erreurs 404"
 echo "--------------------------------------------------------------------------"
 
-# Trie les résultats par nombre d'occurrences (ordre décroissant)
-for url in "${!url_counts[@]}"; do
-    echo "${url_counts[$url]} $url"
-done | sort -nr | while read -r count url; do
+# Lire directement depuis le fichier trié
+while read -r line; do
+    count=$(echo "$line" | awk '{print $1}')
+    url=$(echo "$line" | cut -d' ' -f2-)
     printf "%-60s %d\n" "$url" "$count"
-done
+done < "$URL_COUNT_FILE"
 
-# Supprime le fichier temporaire
-rm "$TEMP_FILE"
+# Supprime les fichiers temporaires
+rm "$TEMP_FILE" "$URL_COUNT_FILE"
