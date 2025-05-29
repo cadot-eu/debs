@@ -2,7 +2,7 @@
 
 set -e
 
-# Détection du binaire à utiliser
+# Détection de la commande docker compose
 if command -v docker-compose &> /dev/null; then
     COMPOSE="docker-compose"
 elif docker compose version &> /dev/null; then
@@ -12,16 +12,34 @@ else
     exit 1
 fi
 
-# Construction de la commande avec les fichiers disponibles
-FILES="-f docker-compose.yml"
+# Fichiers à vérifier dans cet ordre
+CANDIDATES=(
+  "docker-compose.yml"
+  "docker-compose.yaml"
+  "docker-compose.override.yml"
+  "docker-compose.override.yaml"
+  "docker-compose.local.yml"
+  "docker-compose.local.yaml"
+  "compose.yml"
+  "compose.yaml"
+  "compose.override.yml"
+  "compose.override.yaml"
+  "compose.local.yml"
+  "compose.local.yaml"
+)
 
-[[ -f docker-compose.override.yml ]] && FILES+=" -f docker-compose.override.yml"
-[[ -f docker-compose.local.yml ]] && FILES+=" -f docker-compose.local.yml"
-[[ -f compose.yaml ]] && FILES+=" -f compose.yaml"
-[[ -f compose.override.yaml ]] && FILES+=" -f compose.override.yaml"
-[[ -f compose.local.yaml ]] && FILES+=" -f compose.local.yaml"
+FILES=""
+for FILE in "${CANDIDATES[@]}"; do
+    if [[ -f "$FILE" ]]; then
+        FILES="$FILES -f $FILE"
+    fi
+done
 
-# Lancement
-echo "Lancement de : $COMPOSE $FILES up -d"
+if [[ -z "$FILES" ]]; then
+    echo "Aucun fichier de configuration Docker Compose trouvé."
+    exit 1
+fi
+
+# Exécution
+echo "Commande exécutée : $COMPOSE $FILES up -d"
 $COMPOSE $FILES up -d
-
