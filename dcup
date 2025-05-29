@@ -1,2 +1,27 @@
-docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.local.yml up
+#!/bin/bash
+
+set -e
+
+# Détection du binaire à utiliser
+if command -v docker-compose &> /dev/null; then
+    COMPOSE="docker-compose"
+elif docker compose version &> /dev/null; then
+    COMPOSE="docker compose"
+else
+    echo "Erreur : ni docker-compose ni docker compose n'est installé."
+    exit 1
+fi
+
+# Construction de la commande avec les fichiers disponibles
+FILES="-f docker-compose.yml"
+
+[[ -f docker-compose.override.yml ]] && FILES+=" -f docker-compose.override.yml"
+[[ -f docker-compose.local.yml ]] && FILES+=" -f docker-compose.local.yml"
+[[ -f compose.yaml ]] && FILES+=" -f compose.yaml"
+[[ -f compose.override.yaml ]] && FILES+=" -f compose.override.yaml"
+[[ -f compose.local.yaml ]] && FILES+=" -f compose.local.yaml"
+
+# Lancement
+echo "Lancement de : $COMPOSE $FILES up -d"
+$COMPOSE $FILES up -d
 
