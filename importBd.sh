@@ -136,6 +136,9 @@ DB_EXISTS=$(docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -tAc
 
 if [[ "$DB_EXISTS" == "1" ]]; then
     echo "⚠️ La base '$DB_NAME' existe déjà. Suppression en cours..."
+    docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();
+    "
     docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "DROP DATABASE \"$DB_NAME\";" 2>/dev/null
 fi
 
