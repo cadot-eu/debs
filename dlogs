@@ -5,17 +5,17 @@ nombre_de_logs=10
 nom_du_docker=""
 
 # Si un argument non optionnel est fourni, il s'agit du nom du conteneur Docker
-if [ -n "$1" ] && [ "$1" != "-f" ]; then
+if [ -n "$1" ] && [ "$1" != "-n" ]; then
     nom_du_docker=$1
 else
     nom_du_docker=$(basename "$(pwd)") # Nom du répertoire en cours par défaut si aucun argument n'est fourni
 fi
 
-# Option -f pour affichage continue
-if [ "$1" == "-f" ] || [ "$2" == "-f" ]; then
-    docker logs --follow --tail="$nombre_de_logs" "$nom_du_docker" 2>&1 | sed 's/\r$/\r\n/' | sed 's/PHP Fatal error:/\nPHP Fatal error:/' | sed 's/\\n/\n/g' | ccze -A
-else
-    # Récupérer les derniers logs du conteneur Docker et ajouter un saut de ligne après [date time]
+# Option -n pour affichage ponctuel (non continu)
+if [ "$1" == "-n" ] || [ "$2" == "-n" ]; then
     docker logs --tail="$nombre_de_logs" "$nom_du_docker" 2>&1 | sed 's/\r$/\r\n/' | sed 's/PHP Fatal error:/\nPHP Fatal error:/' | sed 's/\\n/\n/g' | ccze -A
+else
+    # Affichage continu par défaut
+    docker logs --follow --tail="$nombre_de_logs" "$nom_du_docker" 2>&1 | sed 's/\r$/\r\n/' | sed 's/PHP Fatal error:/\nPHP Fatal error:/' | sed 's/\\n/\n/g' | ccze -A
 fi
 
