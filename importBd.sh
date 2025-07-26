@@ -195,3 +195,9 @@ if [[ "$PURGE_VOLUME" == "y" || "$PURGE_VOLUME" == "Y" ]]; then
 fi
 echo ""
 echo "💡 Votre base de données est maintenant prête à l'utilisation !"
+if [[ -f "uploads_backup_${NOM_REP}_${JOUR}.tar.gz" ]]; then
+    sudo rm public/uploads -R
+    sudo tar xvzf uploads_backup_${NOM_REP}_${JOUR}.tar.gz
+    echo "vos fichiers de sauvegarde sont maintenant dans le dossier public/uploads"
+fi
+echo "🎉 Sauvegarde terminée avec succès !"
