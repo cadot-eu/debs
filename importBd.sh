@@ -27,20 +27,69 @@ read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
 VOLUME_NAME=$DEFAULT_VOLUME
 
 # 📌 Sélection du fichier SQL
-select_file=$(ls *.sql 2>/dev/null | nl)
-if [ -z "$select_file" ]; then
-    echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
-    exit 1
+if [ -f ".env.local" ]; then
+    # Récupère le nom du répertoire courant
+    SSH_HOST=$(grep '^SSH=' .env.local | cut -d '=' -f2)
+    # Récupère la liste des fichiers sql du répertoire backups et l'affiche
+    distant_files=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | nl)
+    if [ -n "$distant_files" ]; then
+        echo "\n📁 Fichiers SQL distants :"
+        echo "$distant_files"
+        read -p "Numéro du fichier SQL distant à importer: " file_number
+        SELECTED_FILE=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | awk -v num="$file_number" 'NR == num {print $1}' | xargs -n1 basename)
+        if [ -n "$SELECTED_FILE" ]; then
+            # Récupère le fichier SQL distant
+            scp $SSH_HOST:backups/$SELECTED_FILE .
+            # Récupère le fichier tar.gz associé si demandé
+            read -p "Voulez-vous récupérer le fichier tar.gz associé ? (O/n): " response
+            response=${response,,}
+            if [[ -z "$response" || "$response" == "o" || "$response" == "y" ]]; then
+                # Extraire juste le nom du fichier sans le chemin backups/
+                SELECTED_FILE_BASENAME=$(basename "$SELECTED_FILE")
+                SELECTED_FILE_TAR_GZ=${SELECTED_FILE_BASENAME%.sql}.tar.gz
+                scp $SSH_HOST:backups/$SELECTED_FILE_TAR_GZ .
+            fi
+        else
+            echo "❌ Sélection invalide. Veuillez choisir un numéro de fichier correct."
+            exit 1
+        fi
+    else
+        # Sinon propose les fichiers .sql locaux
+        select_file=$(ls *.sql 2>/dev/null | nl)
+        if [ -z "$select_file" ]; then
+            echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
+            exit 1
+        fi
+        echo ""
+        echo "📁 Fichiers SQL locaux :"
+        echo "$select_file"
+        read -p "Numéro du fichier SQL local à importer: " file_number
+        SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
+    fi
+else
+    select_file=$(ls *.sql 2>/dev/null | nl)
+    if [ -z "$select_file" ]; then
+        echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
+        exit 1
+    fi
+    echo ""
+    echo "📁 Fichiers SQL locaux :"
+    echo "$select_file"
+    read -p "Numéro du fichier SQL local à importer: " file_number
+    SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
 fi
 
-echo "📁 Fichiers SQL disponibles :"
-echo "$select_file"
-read -p "Numéro du fichier SQL ou dump à importer: " file_number
 
-SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
+# Si SELECTED_FILE est déjà défini (fichier distant sélectionné), ne pas redemander la sélection locale
 if [ -z "$SELECTED_FILE" ]; then
-    echo "❌ Sélection invalide. Veuillez choisir un numéro de fichier correct."
-    exit 1
+    echo "📁 Fichiers SQL disponibles :"
+    echo "$select_file"
+    read -p "Numéro du fichier SQL ou dump à importer: " file_number
+    SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
+    if [ -z "$SELECTED_FILE" ]; then
+        echo "❌ Sélection invalide. Veuillez choisir un numéro de fichier correct."
+        exit 1
+    fi
 fi
 
 # 📌 Assignation des arguments en ligne de commande (prioritaire)
