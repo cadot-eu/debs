@@ -56,12 +56,7 @@ if [[ ! -f "$SELECTED_FILE" ]]; then
     exit 1
 fi
 
-echo "🚀 Configuration :"
-echo "   📦 Conteneur: $CONTAINER_NAME"
-echo "   🗄️ Base: $DB_NAME"
-echo "   👤 Utilisateur: $PG_USER"
-echo "   📁 Fichier: $SELECTED_FILE"
-echo "   💾 Volume: $VOLUME_NAME"
+echo "🚀 Configuration : 📦 Conteneur: $CONTAINER_NAME 🗄️ Base: $DB_NAME 👤 Utilisateur: $PG_USER 📁 Fichier: $SELECTED_FILE 💾 Volume: $VOLUME_NAME"
 
 # 📌 SUPPRESSION COMPLÈTE SI DEMANDÉE
 if [[ "$PURGE_VOLUME" == "y" || "$PURGE_VOLUME" == "Y" ]]; then
@@ -69,32 +64,26 @@ if [[ "$PURGE_VOLUME" == "y" || "$PURGE_VOLUME" == "Y" ]]; then
     echo "🗑️ === SUPPRESSION COMPLÈTE EN COURS ==="
     
     # Arrêter le conteneur
-    echo "⏹️ Arrêt du conteneur $CONTAINER_NAME..."
     docker stop "$CONTAINER_NAME" 2>/dev/null || echo "ℹ️ Conteneur déjà arrêté"
     
     # Supprimer le conteneur
-    echo "🗑️ Suppression du conteneur $CONTAINER_NAME..."
     docker rm -f "$CONTAINER_NAME" 2>/dev/null || echo "ℹ️ Conteneur déjà supprimé"
     
     # Supprimer le volume (silencieux)
-    echo "🗑️ Suppression du volume $VOLUME_NAME..."
     docker volume rm "$VOLUME_NAME" 2>/dev/null || docker volume rm "$VOLUME_NAME" --force 2>/dev/null || echo "ℹ️ Volume déjà supprimé ou inexistant"
     
     # Redémarrer avec docker-compose
     echo "🔄 Redémarrage des services..."
     if [[ -f "docker-compose.yml" ]]; then
-        echo "📋 Utilisation de docker-compose..."
         docker-compose up -d "$CONTAINER_NAME"
         echo "⏳ Attente du démarrage du conteneur..."
         sleep 15
         elif [[ -f "compose.yml" ]]; then
-        echo "📋 Utilisation de compose.yml..."
         docker compose up -d "$CONTAINER_NAME"
         echo "⏳ Attente du démarrage du conteneur..."
         sleep 15
     else
         echo "⚠️ Aucun fichier docker-compose trouvé."
-        echo "💡 Redémarrage manuel du conteneur..."
         
         # Créer un nouveau conteneur PostgreSQL
         docker run -d --name "$CONTAINER_NAME" \
@@ -109,7 +98,6 @@ if [[ "$PURGE_VOLUME" == "y" || "$PURGE_VOLUME" == "Y" ]]; then
         sleep 15
     fi
     
-    echo "✅ Suppression complète terminée !"
 fi
 
 # 📌 Attendre que le conteneur soit prêt
@@ -138,13 +126,13 @@ if [[ "$DB_EXISTS" == "1" ]]; then
     echo "⚠️ La base '$DB_NAME' existe déjà. Suppression en cours..."
     docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();
-    "
-    docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "DROP DATABASE \"$DB_NAME\";" 2>/dev/null
+    " >/dev/null 2>&1
+    docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "DROP DATABASE \"$DB_NAME\";" >/dev/null 2>&1
 fi
 
 # 📌 Création de la base
 echo "🏗️ Création de la base '$DB_NAME'..."
-docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\";" 2>/dev/null
+docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\";" >/dev/null 2>&1
 if [[ $? -eq 0 ]]; then
     echo "✅ Base '$DB_NAME' créée avec succès."
 else
@@ -158,18 +146,11 @@ else
 fi
 
 # 📌 IMPORTATION
-echo ""
-echo "📥 === IMPORTATION EN COURS ==="
-echo "📁 Fichier: $SELECTED_FILE"
-echo "🔍 Type détecté: $FILE_TYPE"
-
 if [[ "$FILE_TYPE" == "application/x-sql" ]] || [[ "$SELECTED_FILE" == *.sql ]]; then
-    echo "📄 Import de fichier SQL..."
     # Filtrer les lignes contenant ALTER OWNER pour éviter l'erreur
-    sed '/OWNER TO/d' "$SELECTED_FILE" | docker exec -i "$CONTAINER_NAME" psql -U "$PG_USER" -d "$DB_NAME"
+    sed '/OWNER TO/d' "$SELECTED_FILE" | docker exec -i "$CONTAINER_NAME" psql -U "$PG_USER" -d "$DB_NAME" >/dev/null
     elif [[ "$FILE_TYPE" == "application/octet-stream" ]] || [[ "$SELECTED_FILE" == *.dump ]]; then
-    echo "📦 Import de fichier dump..."
-    docker exec -i "$CONTAINER_NAME" pg_restore --no-owner -U "$PG_USER" -d "$DB_NAME" < "$SELECTED_FILE"
+    docker exec -i "$CONTAINER_NAME" pg_restore --no-owner -U "$PG_USER" -d "$DB_NAME" < "$SELECTED_FILE" >/dev/null
 else
     echo "❌ Format de fichier non reconnu. Veuillez fournir un fichier .sql ou .dump."
     exit 1
@@ -183,21 +164,16 @@ else
     exit 1
 fi
 
-# 📌 Informations finales
-echo ""
-echo "🎉 === TERMINÉ AVEC SUCCÈS ==="
-echo "   📦 Conteneur: $CONTAINER_NAME"
-echo "   🗄️ Base: $DB_NAME"
-echo "   👤 Utilisateur: $PG_USER"
-echo "   📁 Import: $SELECTED_FILE"
 if [[ "$PURGE_VOLUME" == "y" || "$PURGE_VOLUME" == "Y" ]]; then
     echo "   🗑️ Volume complètement supprimé et recréé"
 fi
 echo ""
-echo "💡 Votre base de données est maintenant prête à l'utilisation !"
-if [[ -f "uploads_backup_${NOM_REP}_${JOUR}.tar.gz" ]]; then
+SELECTED_FILE_TAR_GZ=$(echo "$SELECTED_FILE" | sed 's/\.sql$/\.tar\.gz/')
+if [[ -f "$SELECTED_FILE_TAR_GZ" ]]; then
     sudo rm public/uploads -R
-    sudo tar xvzf uploads_backup_${NOM_REP}_${JOUR}.tar.gz
+    sudo tar xvzf "$SELECTED_FILE_TAR_GZ"
     echo "vos fichiers de sauvegarde sont maintenant dans le dossier public/uploads"
+else
+    echo "Aucun fichier \"$SELECTED_FILE_TAR_GZ\" de sauvegarde trouvé."
 fi
-echo "🎉 Sauvegarde terminée avec succès !"
+echo "🎉 Restauration terminée avec succès !"
