@@ -31,8 +31,8 @@ SITE_DIR=${7:-$SITE_DIR}
 
 
 # 📌 Définir les noms des fichiers de sauvegarde
-DB_BACKUP_FILE="${DEST_DIR}/backup_${DB_NAME}_${TIMESTAMP}.sql"
-UPLOADS_BACKUP_FILE="${DEST_DIR}/uploads_backup_${DB_NAME}_${TIMESTAMP}.tar.gz"
+DB_BACKUP_FILE="${DEST_DIR}/${DB_NAME}_${TIMESTAMP}.sql"
+UPLOADS_BACKUP_FILE="${DEST_DIR}/${DB_NAME}_${TIMESTAMP}.tar.gz"
 
 echo "📤 Sauvegarde de la base '$DB_NAME' depuis le conteneur '$CONTAINER_NAME'..."
 
