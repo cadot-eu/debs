@@ -1,0 +1,11 @@
+version: '3'
+services:
+  scripts:
+    image: cadoteu/symfony5-6-runsite
+    container_name: scripts
+    volumes:
+      - .:/app
+    restart: always
+    ports:
+      - 80
+ 
