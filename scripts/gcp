@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nCommit & push git intelligent, message AI si DEEPSEEK, tests, submodules."
+  echo "Usage: gcp [message] [--force|-f] [--passtest|-p] [--help|-h]"
+  echo "Exemple: gcp 'fix: bug' --force"
+  exit 0
+fi
 #!/bin/bash
 
 function show_usage (){

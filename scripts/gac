@@ -1,2 +1,8 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nAjoute un fichier et commit."
+  echo "Usage: gac fichier message"
+  echo "Exemple: gac toto.txt 'ajout toto'"
+  exit 0
+fi
 git add "$1"
 git commit -m "$2"

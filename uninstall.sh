@@ -1,3 +1,11 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nDésinstalle tous les scripts et alias installés dans le dossier cible (par défaut ~/bin)."
+  echo "Usage: uninstall.sh [dossier_cible] [--reset]"
+  echo "  [dossier_cible] : dossier où supprimer les scripts (défaut: ~/bin)"
+  echo "  --reset : supprime aussi les anciens scripts dans /bin (legacy)"
+  echo "Exemple: ./uninstall.sh --reset"
+  exit 0
+fi
 ALIASES=(
   "dlogs"
   "gcp"

@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nGère la mise en veille ACPI (install/uninstall)."
+  echo "Usage: suspend.sh --install | --uninstall | -h"
+  echo "Exemple: sudo ./suspend.sh --install"
+  exit 0
+fi
 #!/bin/bash
 
 CONFIG_FILE="/etc/systemd/logind.conf"

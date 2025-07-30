@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nRestaure une base PostgreSQL (interactif, SSH possible, choix fichier)."
+  echo "Usage: importbd.sh"
+  echo "Exemple: ./importbd.sh"
+  exit 0
+fi
 #!/bin/bash
 
 # 🗑️ Script complet : Suppression complète + Import PostgreSQL

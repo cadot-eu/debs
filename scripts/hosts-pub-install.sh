@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nInstalle un fichier hosts blacklisté (Ultimate Hosts Blacklist)."
+  echo "Usage: hosts-pub-install.sh"
+  echo "Exemple: sudo ./hosts-pub-install.sh"
+  exit 0
+fi
 #!/bin/bash
 
 # Linux hosts Installer for the Ultimate Hosts Blacklist

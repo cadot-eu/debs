@@ -1,2 +1,8 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nAjoute tous les fichiers et commit."
+  echo "Usage: gall message"
+  echo "Exemple: gall 'commit all'"
+  exit 0
+fi
 git add .
 git commit -m "$1"

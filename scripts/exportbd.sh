@@ -1,3 +1,10 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "\nExport PostgreSQL + uploads."
+    echo "Usage: exportbd.sh [CONTAINER DB USER PASS TIMESTAMP DEST_DIR SITE_DIR]"
+    echo "Si aucun paramètre n'est fourni, le script est interactif."
+    echo "Exemple: exportbd.sh rss-db dbrss rss '' 20250730_1200 /tmp/rss-backup rss"
+    exit 0
+fi
 #!/bin/bash
 
 # 📌 Demander les paramètres si ils ne sont pas fournis

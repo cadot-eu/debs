@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nMet à jour le fichier hosts blacklisté (Ultimate Hosts Blacklist)."
+  echo "Usage: hosts-pub-update.sh"
+  echo "Exemple: sudo ./hosts-pub-update.sh"
+  exit 0
+fi
 #!/bin/bash
 
 # Linux hosts Updater for the Ultimate Hosts Blacklist

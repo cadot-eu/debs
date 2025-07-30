@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nAjoute une carte de test dans la base Nextcloud Deck (via Docker)."
+  echo "Usage: cards.sh"
+  echo "Exemple: cards.sh"
+  exit 0
+fi
 #!/bin/bash
 my_dir="$(dirname "$0")"
 source "$my_dir/lib.sh"

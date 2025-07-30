@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nFait tourner l'écran et adapte le stylet/tablette."
+  echo "Usage: rotate-screen"
+  echo "Exemple: rotate-screen"
+  exit 0
+fi
 #!/bin/sh
 
 # Find the line in "xrandr -q --verbose" output that contains current screen orientation and "strip" out current orientation.

@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nCommit git (tests si présents), push si gc p."
+  echo "Usage: gc [message] [--passtest|-p] [--help|-h]"
+  echo "Exemple: gc 'update'"
+  exit 0
+fi
 #!/bin/bash
 
 function show_usage (){

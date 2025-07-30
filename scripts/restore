@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nRestaure une sauvegarde duplicity."
+  echo "Usage: restore [full|file|list] [fichier]"
+  echo "Exemple: restore file monfichier.txt"
+  exit 0
+fi
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi

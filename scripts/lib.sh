@@ -1,3 +1,9 @@
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo -e "\nLibrairie de fonctions Bash pour d'autres scripts."
+  echo "Usage: source lib.sh"
+  echo "Exemple: source ./lib.sh"
+  exit 0
+fi
 #!/bin/bash
 # ---------------------------------------------------------------------------- #
 #                                   arguments                                  #
