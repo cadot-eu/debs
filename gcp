@@ -13,13 +13,20 @@ function show_usage (){
 
 
 
+
 force=0
 passtest=0
+
+# Charger .env.local si présent
+if [ -f .env.local ]; then
+    export $(grep -v '^#' .env.local | xargs)
+fi
 
 message="$1"
 
 #test option force is set
-for i in $@
+
+for i in "$@"
 do
     case $i in
         --force| -f)
@@ -32,32 +39,60 @@ do
         ;;
         --help| -h)
             show_usage
+            exit 0
         ;;
     esac
     shift
 done
 
 if [ ! -d "tests" ]; then
-     passtest=1
+    passtest=1
 fi
 
-if [[ `git status --porcelain` ]] || [ $force == 1 ]  ; then
+
+if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
     if [ -f bin/phpunit ] && [ $passtest == 0 ] ; then
         echo "Running tests"
-        CURRENT=`pwd`
-        BASENAME=`basename "$CURRENT"`
+        CURRENT=$(pwd)
+        BASENAME=$(basename "$CURRENT")
         docker exec -it "$BASENAME" bin/phpunit
     fi
     if [ $? -ne 0 ]; then
         echo "ERREUR DANS LES TESTS ARRET" && exit
     else
-        #sudo rm git_news.json
-        #echo "{" > git_news.json
-        #git log --pretty=format:'"%h":{  "subject": "%s",%n  "date": "%aD"%n },'>> git_news.json  
-        #echo "}" >> git_news.json 
-        #sed -i 's/},}/}}/' git_news.json 
-        #sudo chown www-data: git_news.json
         git add .
+        
+        # Si pas de message fourni, essayer Deepseek
+        if [ -z "$message" ]; then
+            if [ -z "$DEEPSEEK" ]; then
+                echo "Erreur: ni titre de commit fourni, ni DEEPSEEK dans .env.local."
+                exit 1
+            fi
+            # Générer le diff
+            DIFF=$(git diff --cached)
+            if [ -z "$DIFF" ]; then
+                DIFF=$(git diff)
+            fi
+            if [ -z "$DIFF" ]; then
+                echo "Aucune modification détectée."
+                exit 1
+            fi
+            echo "Génération du commit par Deepseek..."
+            # Prompt pour Deepseek (JSON safe)
+            PROMPT="Écris un message de commit concis et informatif en français pour les modifications suivantes :\n$DIFF"
+            # Utiliser jq pour encoder le prompt correctement
+            JSON_DATA=$(jq -n --arg prompt "$PROMPT" '{model: "deepseek-chat", messages: [{role: "user", content: $prompt}], max_tokens: 200}')
+            message=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $DEEPSEEK" \
+            -d "$JSON_DATA" | jq -r '.choices[0].message.content' | head -n 1)
+            if [ -z "$message" ] || [ "$message" == "null" ]; then
+                echo "Erreur lors de la génération du message de commit avec Deepseek."
+                exit 1
+            fi
+            echo "Message de commit généré : $message"
+        fi
+        
         git commit -m "$message"
         git submodule foreach "git add . && gcp '$message'"
         git add .
