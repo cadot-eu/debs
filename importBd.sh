@@ -27,13 +27,25 @@ read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
 VOLUME_NAME=$DEFAULT_VOLUME
 
 # 📌 Sélection du fichier SQL
+# Recherche SSH dans .env.local ou .env
+SSH_HOST=""
 if [ -f ".env.local" ]; then
-    # Récupère le nom du répertoire courant
     SSH_HOST=$(grep '^SSH=' .env.local | cut -d '=' -f2)
+    if [ -n "$SSH_HOST" ]; then
+        echo "🔑 SSH détecté dans .env.local : $SSH_HOST"
+    fi
+    elif [ -f ".env" ]; then
+    SSH_HOST=$(grep '^SSH=' .env | cut -d '=' -f2)
+    if [ -n "$SSH_HOST" ]; then
+        echo "🔑 SSH détecté dans .env : $SSH_HOST"
+    fi
+fi
+
+if [ -n "$SSH_HOST" ]; then
     # Récupère la liste des fichiers sql du répertoire backups et l'affiche
     distant_files=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | nl)
     if [ -n "$distant_files" ]; then
-        echo "\n📁 Fichiers SQL distants :"
+        echo "\n📁 Fichiers SQL distants trouvés :"
         echo "$distant_files"
         read -p "Numéro du fichier SQL distant à importer: " file_number
         SELECTED_FILE=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | awk -v num="$file_number" 'NR == num {print $1}' | xargs -n1 basename)
@@ -44,7 +56,6 @@ if [ -f ".env.local" ]; then
             read -p "Voulez-vous récupérer le fichier tar.gz associé ? (O/n): " response
             response=${response,,}
             if [[ -z "$response" || "$response" == "o" || "$response" == "y" ]]; then
-                # Extraire juste le nom du fichier sans le chemin backups/
                 SELECTED_FILE_BASENAME=$(basename "$SELECTED_FILE")
                 SELECTED_FILE_TAR_GZ=${SELECTED_FILE_BASENAME%.sql}.tar.gz
                 scp $SSH_HOST:backups/$SELECTED_FILE_TAR_GZ .
@@ -54,10 +65,11 @@ if [ -f ".env.local" ]; then
             exit 1
         fi
     else
+        echo "❗ Aucun fichier SQL distant trouvé sur $SSH_HOST dans backups/. Format attendu : ${DEFAULT_NAME}_*.sql"
         # Sinon propose les fichiers .sql locaux
         select_file=$(ls *.sql 2>/dev/null | nl)
         if [ -z "$select_file" ]; then
-            echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
+            echo "❌ Aucun fichier .sql trouvé dans le répertoire courant. Format attendu : *.sql"
             exit 1
         fi
         echo ""
@@ -67,9 +79,10 @@ if [ -f ".env.local" ]; then
         SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
     fi
 else
+    echo "ℹ️ Aucun SSH détecté dans .env.local ou .env."
     select_file=$(ls *.sql 2>/dev/null | nl)
     if [ -z "$select_file" ]; then
-        echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
+        echo "❌ Aucun fichier .sql trouvé dans le répertoire courant. Format attendu : *.sql"
         exit 1
     fi
     echo ""
