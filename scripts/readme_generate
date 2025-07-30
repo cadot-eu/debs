@@ -18,15 +18,19 @@ done
 
 SCRIPTS_DIR="$(dirname "$0")"
 
+# Corrige les droits d'exécution sur tous les scripts du dossier
+find "$SCRIPTS_DIR" -type f ! -name 'readme_generate' -exec chmod +x {} \;
+
 README="$(pwd)/README.md"
 # Supprime le README d'un ancien lancement s'il existe
 [ -f "$README" ] && rm -f "$README"
 
+
 cat > "$README" <<EOF
 # Scripts disponibles
 
-| Script | Description & Usage | Exemple |
-|--------|--------------------|---------|
+| Script | Description/Usage/Exemple |
+|--------|--------------------------|
 EOF
 
 
@@ -50,12 +54,13 @@ for script in "$SCRIPTS_DIR"/*; do
         [ -z "$desc" ] && desc="-"
         [ -z "$usage" ] && usage="-"
         [ -z "$exemple" ] && exemple="-"
-        desc_usage="$desc"
-        [ "$usage" != "-" ] && desc_usage="$desc_usage | $usage"
-        echo "| $name | $desc_usage | $exemple |" >> "$README"
+        desc_usage_exemple="$desc"
+        [ "$usage" != "-" ] && desc_usage_exemple="$desc_usage_exemple | $usage"
+        [ "$exemple" != "-" ] && desc_usage_exemple="$desc_usage_exemple | $exemple"
+        echo "| $name | $desc_usage_exemple |" >> "$README"
     else
         echo "[WARN] $name ne gère pas l'option -h" 1>&2
-        echo "| $name | - | - |" >> "$README"
+        echo "| $name | - |" >> "$README"
         rm -f "$README"
         exit 1
     fi
