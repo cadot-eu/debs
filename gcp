@@ -78,19 +78,31 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
                 exit 1
             fi
             echo "Génération du commit par Deepseek..."
-            # Prompt pour Deepseek (exemple pro, format direct)
-            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement un message de commit git professionnel, sans aucune phrase d'introduction, sans explication, sans préambule, sans guillemets, sans retour à la ligne avant ou après, et sans rien d'autre que le message de commit.\n\nExemples :\nfeat: ajoute la gestion des utilisateurs\nfix: corrige le bug d'affichage du menu\n\nLe message doit être court, descriptif, et formaté comme un vrai message de commit. La réponse doit être strictement le message de commit, rien d'autre."
+            # Prompt pour Deepseek (format JSON, découpe title/body, sans intro ni explication)
+            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement un message de commit git professionnel au format JSON, sans aucune phrase d'introduction, sans explication, sans préambule, sans guillemets autour de la réponse, sans retour à la ligne avant ou après, et sans rien d'autre que l'objet JSON.\n\nFormat attendu : {\"title\": \"feat: courte description\", \"body\": \"explication optionnelle sur plusieurs lignes\"}\n\nExemples : {\"title\": \"feat: ajoute la gestion des utilisateurs\", \"body\": \"Ajout du CRUD utilisateur et des tests associés\"}\n{\"title\": \"fix: corrige le bug d'affichage du menu\", \"body\": \"Correction du CSS pour le menu déroulant\"}\n\nLe champ 'title' doit être court, descriptif, et formaté comme un vrai message de commit. Le champ 'body' est optionnel. La réponse doit être strictement l'objet JSON, rien d'autre."
             # Utiliser jq pour encoder le prompt correctement
             JSON_DATA=$(jq -n --arg prompt "$PROMPT" '{model: "deepseek-chat", messages: [{role: "user", content: $prompt}], max_tokens: 200}')
-            message=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
+            raw_response=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $DEEPSEEK" \
-            -d "$JSON_DATA" | jq -r '.choices[0].message.content' | head -n 1)
-            if [ -z "$message" ] || [ "$message" == "null" ]; then
+            -d "$JSON_DATA" | jq -r '.choices[0].message.content')
+            # Extraire la première accolade ouvrante et la dernière fermante pour ne garder que l'objet JSON
+            json_commit=$(echo "$raw_response" | awk 'BEGIN{found=0} /\{/ {found=1} {if(found) print} /\}/ {if(found) exit}')
+            # Nettoyer les espaces et retours à la ligne
+            json_commit=$(echo "$json_commit" | tr -d '\r' | tr -d '\n')
+            # Extraire title et body
+            commit_title=$(echo "$json_commit" | jq -r '.title')
+            commit_body=$(echo "$json_commit" | jq -r '.body')
+            if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
                 echo "Erreur lors de la génération du message de commit avec Deepseek."
                 exit 1
             fi
-            echo "Message de commit généré : $message"
+            echo "Message de commit généré : $commit_title"
+            message="$commit_title"
+            # Ajoute le body si présent
+            if [ -n "$commit_body" ] && [ "$commit_body" != "null" ]; then
+                message="$commit_title\n\n$commit_body"
+            fi
         fi
         
         git commit -m "$message"
