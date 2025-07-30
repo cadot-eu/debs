@@ -1,58 +1,6 @@
-# Organisation des scripts
-
-Tous les scripts (sauf `dlogs` et `gcp`) sont désormais dans le dossier `scripts/` à la racine du projet.
-
-## Logique de nommage
-
-- Scripts renommés en anglais, en kebab-case (ex: `list-big-dirs`, `exportbd.sh`).
-- Les scripts shell gardent l'extension `.sh`.
-- Les scripts non shell sont aussi renommés pour plus de clarté.
-- Les scripts `dlogs` et `gcp` restent à la racine pour compatibilité.
-
-Pour installer tous les scripts dans votre PATH utilisateur :
-
-```bash
-cd scripts
-./install.sh
-```
-
-Pour désinstaller :
-
-```bash
-cd scripts
-./uninstall.sh
-```
-
-Par défaut, l'installation se fait dans `~/bin-personnel` (modifiable en argument).
-
 # Scripts disponibles
 
-| Script                        | Fonction / Usage                                                                                                   | Paramètres (obligatoires / optionnels)                | Exemple d'appel                                      | Retour / Effet principal                      |
-|-------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|------------------------------------------------------|-----------------------------------------------|
-| dbash                         | Ouvre un shell (bash/sh) dans un conteneur Docker du dossier courant ou du nom passé en paramètre                  | [nom_du_conteneur] [shell] (par défaut: bash)         | dbash  ou  dbash mariadb sh                          | Shell interactif dans le conteneur           |
-| dkill                         | Stoppe et supprime un conteneur Docker par son nom                                                                | nom_du_conteneur                                     | dkill test                                           | Arrêt et suppression du conteneur            |
-| dkillall                      | Stoppe et supprime tous les conteneurs Docker                                                                     | Aucun                                                | dkillall                                             | Tous les conteneurs supprimés                |
-| dns-refresh                   | Vide le cache DNS                                                                                                 | Aucun                                                | dns-refresh                                         | Rafraîchit le cache DNS                      |
-| fast                          | Met tous les CPU en mode performance                                                                              | Aucun                                                | fast                                                | CPU en mode performance                      |
-| slow                          | Met tous les CPU en mode powersave (batterie)                                                                     | Aucun                                                | slow                                                | CPU en mode économie                        |
-| gcp                           | Commit & push git intelligent, message AI si DEEPSEEK, tests, submodules                                         | [message] [--force|-f] [--passtest|-p] [--help|-h]     | gcp "fix: bug" ou juste gcp                          | Commit, push, message auto si AI             |
-| gc                            | Commit git (tests si présents), push si gc p                                                                     | [message] [--passtest|-p] [--help|-h]                 | gc "update"                                         | Commit (et push si gc p)                     |
-| gac                           | Ajoute un fichier et commit                                                                                       | fichier message                                      | gac toto.txt "ajout toto"                              | Commit du fichier                             |
-| gacp                          | Ajoute un fichier, commit et push                                                                                 | fichier message                                      | gacp toto.txt "ajout toto"                             | Commit + push du fichier                     |
-| files_clean                   | Nettoie les noms de fichiers d'un dossier (remplace caractères spéciaux)                                         | [répertoire] [-h]                                     | files_clean  ou  files_clean /tmp                      | Fichiers renommés, log console               |
-| 404_count_in_logs             | Compte les URLs générant des 404 dans des logs Symfony/Laravel                                                    | chemin/vers/logs                                     | 404_count_in_logs /var/logs/app                        | Affiche les URLs et le nombre de 404         |
-| svgs_to_pngs                  | Convertit tous les SVG en PNG (largeur paramétrable)                                                              | [largeur] (défaut: 1024)                              | svgs_to_pngs 3000                                     | PNG générés dans le dossier courant          |
-| image_compress                | Compresse et remplace les images (png, jpg, gif, bmp, tif) du dossier courant                                    | Aucun                                                | image_compress                                       | Images compressées                           |
-| installdebs                   | Copie tous les scripts du dossier dans /usr/bin pour usage global                                                 | Aucun                                                | installdebs                                         | Scripts copiés dans /usr/bin                 |
-| rotate-screen                 | Fait tourner l'écran et adapte le stylet/tablette                                                                | Aucun                                                | rotate-screen                                       | Rotation écran + périphériques               |
-| runsite                       | Lance ou crée un docker-compose Symfony5/6, expose le port, génère le Caddyfile                                  | Aucun                                                | runsite                                             | Lancement du site, URL affichée              |
-| server-http-from-curent-dir   | Lance un serveur HTTP sur le dossier courant (port 8000)                                                          | Aucun                                                | server-http-from-curent-dir                            | Serveur HTTP local, URL console              |
-| server-run-command            | Exécute une commande sur un serveur distant (via .env : SERVER_CONNECT, SERVER_DIR)                              | "commande"                                          | server-run-command "ls -l"                              | Résultat de la commande distante             |
-| server-update-yarn-composer   | Exécute yarn/composer update sur un serveur distant (via .env)                                                    | Aucun                                                | server-update-yarn-composer                             | MAJ distante, maintenance                    |
-| exportBd.sh                   | Sauvegarde une base PostgreSQL + fichiers uploads (interactif ou params)                                          | [container db user pass timestamp dest_dir site_dir]  | exportBd.sh ou exportBd.sh rss-db dbrss ...           | Fichiers .sql et .tar.gz générés             |
-| importBd.sh                   | Restaure une base PostgreSQL (interactif, SSH possible, choix fichier)                                            | interactif                                           | importBd.sh                                         | Restauration base, logs console              |
-| suspend.sh                    | Installe/retire la gestion ACPI pour la mise en veille (sudo pm-suspend sans mdp)                                 | --install / --uninstall / -h                         | suspend.sh --install                                   | Mise en veille, config ACPI                  |
-| ...                           | ...                                                                                                               | ...                                                   | ...                                                 | ...                                           |
-
-Pour chaque script, lancez `<script> -h` ou ouvrez le fichier pour plus de détails sur les options avancées.
-
+| Script | Description | Usage | Exemple |
+|--------|-------------|-------|---------|
+| cards.sh | - | Usage: restore [full|file|list] [fichier] | Exemple: restore file monfichier.txt |
+| exportbd.sh | - | Usage: restore [full|file|list] [fichier] | Exemple: restore file monfichier.txt |
