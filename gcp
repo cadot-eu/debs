@@ -21,7 +21,7 @@ passtest=0
 # Charger .env.local uniquement depuis ~/debs ou ~/git/debs (jamais local)
 if [ -f "$HOME/debs/.env.local" ]; then
     export $(grep -v '^#' "$HOME/debs/.env.local" | xargs)
-elif [ -f "$HOME/git/debs/.env.local" ]; then
+    elif [ -f "$HOME/git/debs/.env.local" ]; then
     export $(grep -v '^#' "$HOME/git/debs/.env.local" | xargs)
 fi
 
