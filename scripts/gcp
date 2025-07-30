@@ -1,10 +1,5 @@
 #!/bin/bash
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    echo -e "\nRestaure une sauvegarde duplicity."
-    echo "Usage: restore [full|file|list] [fichier]"
-    echo "Exemple: restore file monfichier.txt"
-    exit 0
-fi
+
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
@@ -12,37 +7,7 @@ if [ -f .env.local ]; then
     export $(grep -v '^#' .env.local | xargs)
 fi
 
-if  [ -n "$BACKUP_URL" ]; then
-    if [ -z $BACKUP_URL ]; then
-        echo "no parameters "
-    else
-        case "$1" in
-            full )
-            duplicity restore $BACKUP_URL ./__restore --no-encryption ;;
-            file )
-                if [ -z "$2" ]
-                then
-                    echo "name of file?"
-                else
-                    DIR="$(dirname "${2}")" ;
-                    mkdir -p "$DIR";
-                    duplicity --file-to-restore "$2" $BACKUP_URL "$2"  --no-encryption
-            fi;;
-            list )
-            duplicity list-current-files $BACKUP_URL ;;
-            * )
-            echo "get a parameter full,file or list" ;;
-        esac
-    fi
-    
-else
-    echo "parameters empty in .env, get BACKUP_URL"
-fi
 
-  echo "Exemple: gcp 'fix: bug' --force"
-  exit 0
-fi
-#!/bin/bash
 
 function show_usage (){
     printf "Usage: $0 [options ]\n"
@@ -153,8 +118,8 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
                 fi
             fi
             echo "Génération du commit par Deepseek..."
-            # Prompt pour Deepseek (format JSON, découpe title/body, sans intro ni explication)
-            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement et strictement un message de commit git professionnel au format JSON. Réponds exclusivement par l'objet JSON, sans aucune phrase d'introduction, sans analyse, sans explication, sans préambule, sans balise, sans bloc de code, sans texte avant ou après, sans retour à la ligne avant ou après, sans rien d'autre que l'objet JSON. N'inclus surtout pas de balises \`\`\`json ni aucun texte supplémentaire.\n\nFormat attendu : {\"title\": \"feat: courte description\", \"body\": \"explication optionnelle sur plusieurs lignes\"}\n\nExemples : {\"title\": \"feat: ajoute la gestion des utilisateurs\", \"body\": \"Ajout du CRUD utilisateur et des tests associés\"}\n{\"title\": \"fix: corrige le bug d'affichage du menu\", \"body\": \"Correction du CSS pour le menu déroulant\"}\n\nLe champ 'title' doit être court, affirmatif, descriptif, et formaté comme un vrai message de commit. Le champ 'body' est optionnel. La réponse doit être strictement l'objet JSON, rien d'autre."
+            # Prompt strict pour forcer une réponse JSON et limiter la taille
+            PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
             # Utiliser un fichier temporaire pour éviter la limite d'arguments
             TMP_PROMPT=$(mktemp)
             echo -n "$PROMPT" > "$TMP_PROMPT"
@@ -176,6 +141,12 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
             rm -f "$TMP_JSON"
             # Nettoyer les balises ``` et ```json éventuelles de la réponse Deepseek
             json_commit=$(echo "$raw_response" | tr -d '\r' | tr -d '\n' | sed -E 's/^```json//;s/^```//;s/```$//;s/```//g')
+            # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
+            if ! echo "$json_commit" | grep -q '^{.*}$'; then
+                echo "Erreur: la réponse Deepseek n'est pas un objet JSON. Réponse brute :"
+                echo "$raw_response"
+                exit 1
+            fi
             commit_title=$(echo "$json_commit" | jq -r '.title')
             commit_body=$(echo "$json_commit" | jq -r '.body')
             if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
