@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Install a Symfony project with Docker: ./script.sh PROJECT_NAME [-h|--help]\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Install a Symfony project with Docker: ./script.sh PROJECT_NAME""
         exit 0
     fi

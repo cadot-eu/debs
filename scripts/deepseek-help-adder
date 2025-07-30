@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Automatically adds/updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Automatically adds or updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]""
         exit 0
     fi
@@ -127,13 +134,15 @@ for script in "$@"; do
             fi
             
             tmpfile=$(mktemp)
-            # Place the -h block right after the shebang
+            # Échappe les guillemets doubles dans le helptext pour éviter les erreurs de syntaxe
+            safe_helptext=$(echo "$helptext" | sed 's/\"/\\\"/g')
+            # Place le -h block juste après le shebang
             {
                 echo "$shebang"
                 echo -e "# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments"
                 echo -e "for arg in \"\$@\"; do"
                 echo -e "    if [[ \"\$arg\" == \"-h\" || \"\$arg\" == \"--help\" ]]; then"
-                echo -e "        echo \"$helptext\""
+                echo -e "        echo \"$safe_helptext\""
                 echo -e "        exit 0"
                 echo -e "    fi"
                 echo -e "done"

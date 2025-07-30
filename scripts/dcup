@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Start Docker Compose services in detached mode, automatically detecting compose files (supports docker-compose.yml, .yaml, override.*, local.*).\" Parameters: none."
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Start Docker Compose services in detached mode, automatically detecting compose files (supports docker-compose.yml, .yaml, override.*, local.*)." Parameters: none."
         exit 0
     fi

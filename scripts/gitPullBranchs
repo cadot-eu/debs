@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Usage: $0 [-h] - Fetches all remote branches and tracks them locally, then pulls all updates.\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Usage: $0 [-h] - Fetches all remote branches and tracks them locally, then pulls all updates.""
         exit 0
     fi

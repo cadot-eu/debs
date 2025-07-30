@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Adds current directory as a service to compose.yaml and creates Caddyfile; params: -h, --help\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Adds current directory as a service to compose.yaml and creates Caddyfile; params: none""
         exit 0
     fi

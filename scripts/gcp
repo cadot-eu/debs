@@ -2,10 +2,11 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Automatically commit and push Git changes with optional AI-generated messages (-f force push, -p skip tests, -h help)""
+        echo "\"Automatically commit and push Git changes with optional AI-generated messages (-f force push, -p skip tests, -h help)\""
         exit 0
     fi
 done
+
 
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)

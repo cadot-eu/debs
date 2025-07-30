@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Usage: $(basename \"$0\") [-h] [container_name] [shell_path] - Attach to a Docker container's shell (default: current directory name as container, /bin/bash as shell).\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Usage: $(basename "$0") [-h] [container_name] [shell_path] - Attach to a Docker container's shell (default: current directory name as container, /bin/bash as shell).""
         exit 0
     fi

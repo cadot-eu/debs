@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Clone and setup a new project.\" Parameters: <destination_directory> <private_git_url>"
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Clone and setup a new project: requires destination directory and private git URL as parameters." Parameters: <destination_directory> <private_git_url>"
         exit 0
     fi

@@ -2,6 +2,13 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Usage: [-h] [-c command] [container_name] [command] - Execute command in or enter a Docker container, defaulting to current directory name\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Usage: [-h] [-c command] [container_name] [command] - Execute command in or enter a Docker container, defaulting to current directory name""
         exit 0
     fi

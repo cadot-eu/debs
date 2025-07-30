@@ -2,6 +2,20 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Usage: $(basename \"$0\") [-h|--help] - Plays beeps for 1 hour; requires 'beep' and pcspkr module.\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Usage: $(basename \"$0\") [-h] - Plays a series of beeps for 1 hour; requires 'beep' command and pcspkr module.\""
+        exit 0
+    fi
+done
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo ""Usage: $(basename "$0") [-h] - Plays a series of beeps for 1 hour; requires 'beep' command and pcspkr module (may need modprobe pcspkr).""
         exit 0
     fi
