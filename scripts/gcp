@@ -60,12 +60,11 @@ while [[ $# -gt 0 ]]; do
         ;;
         --)
             shift
-            break
-        ;;
-        -*)
+            ;;
+        -* )
             # Option inconnue, ignorer
             shift
-        ;;
+            ;;
         *)
             # Premier argument non-option = message
             message="$1"
