@@ -79,7 +79,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
             fi
             echo "Génération du commit par Deepseek..."
             # Prompt pour Deepseek (exemple pro, format direct)
-            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement un message de commit git professionnel, sans phrase d'introduction, dans le style suivant :\n\nfeat: ajoute la gestion des utilisateurs\n\nOu, pour une correction :\nfix: corrige le bug d'affichage du menu\n\nLe message doit être court, descriptif, et formaté comme un vrai message de commit. Ne commence pas par 'Voici' ou autre phrase d'intro."
+            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement un message de commit git professionnel, sans aucune phrase d'introduction, sans explication, sans préambule, sans guillemets, sans retour à la ligne avant ou après, et sans rien d'autre que le message de commit.\n\nExemples :\nfeat: ajoute la gestion des utilisateurs\nfix: corrige le bug d'affichage du menu\n\nLe message doit être court, descriptif, et formaté comme un vrai message de commit. La réponse doit être strictement le message de commit, rien d'autre."
             # Utiliser jq pour encoder le prompt correctement
             JSON_DATA=$(jq -n --arg prompt "$PROMPT" '{model: "deepseek-chat", messages: [{role: "user", content: $prompt}], max_tokens: 200}')
             message=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
