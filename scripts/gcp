@@ -1,4 +1,11 @@
 #!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Automatically commit and push Git changes with optional AI-generated messages (-f force push, -p skip tests, -h help)""
+        exit 0
+    fi
+done
 
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
@@ -117,6 +124,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
                     DIFF="${DIFF:0:$MAX_DIFF}\n[...diff tronqué...]"
                 fi
             fi
+            # ...fin du bloc principal, rien à ajouter ici...
             echo "Génération du commit par Deepseek..."
             # Prompt strict pour forcer une réponse JSON et limiter la taille
             PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
@@ -172,6 +180,72 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
 else
     echo "no modifs ;-)"
 fi
+            break
+        ;;
+        -*)
+            # Option inconnue, ignorer
+            shift
+        ;;
+        *)
+            # Premier argument non-option = message
+            message="$1"
+            shift
+            break
+        ;;
+    esac
+done
+# Si d'autres arguments après, les ignorer (ou les concaténer si tu veux gérer un message sur plusieurs mots)
+if [[ $# -gt 0 && -z "$message" ]]; then
+    message="$*"
+fi
+
+if [ ! -d "tests" ]; then
+    passtest=1
+fi
+
+
+if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
+    if [ -f bin/phpunit ] && [ $passtest == 0 ] ; then
+        echo "Running tests"
+        CURRENT=$(pwd)
+        BASENAME=$(basename "$CURRENT")
+        docker exec -it "$BASENAME" bin/phpunit
+    fi
+    if [ $? -ne 0 ]; then
+        echo "ERREUR DANS LES TESTS ARRET" && exit
+    else
+        git add .
+        
+        # Si pas de message fourni, essayer Deepseek
+        if [ -z "$message" ]; then
+            if [ -z "$DEEPSEEK" ]; then
+                echo "Erreur: ni titre de commit fourni, ni DEEPSEEK dans .env.local."
+                exit 1
+            fi
+            # Générer le diff
+            DIFF=$(git diff --cached)
+            if [ -z "$DIFF" ]; then
+                DIFF=$(git diff)
+            fi
+            if [ -z "$DIFF" ]; then
+                echo "Aucune modification détectée."
+                exit 1
+            fi
+            # Si beaucoup de suppressions/déplacements, ne donner que le nom du dossier
+            SUPPR_COUNT=$(echo "$DIFF" | grep -E '^delete mode|^rename ' | wc -l)
+            if [ "$SUPPR_COUNT" -gt 10 ]; then
+                DIRNAME=$(basename "$PWD")
+                echo "[AVERTISSEMENT] Beaucoup de suppressions/déplacements détectées ($SUPPR_COUNT). Seul le nom du dossier sera envoyé à Deepseek."
+                DIFF="Suppression ou déplacement massif dans le répertoire : $DIRNAME"
+            else
+                # Tronquer le diff si trop volumineux
+                MAX_DIFF=20000
+                if [ ${#DIFF} -gt $MAX_DIFF ]; then
+                    echo "[AVERTISSEMENT] Le diff est trop volumineux, il sera tronqué à $MAX_DIFF caractères pour Deepseek."
+                    DIFF="${DIFF:0:$MAX_DIFF}\n[...diff tronqué...]"
+                fi
+            fi
+        # ...fin du bloc principal, rien à ajouter ici...
             echo "Génération du commit par Deepseek..."
             # Prompt strict pour forcer une réponse JSON et limiter la taille
             PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
