@@ -21,7 +21,7 @@
 | deepseek-help-adder | Automatically adds/updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...] |
 | desactiver_paste_molette_souris | Install gnome-tweak-tool: [-h|--help] (show help) |
 | dkill | Stop and remove a Docker container; parameters: <container_name> [-h|--help] |
-| dkillall | Stop and remove all Docker containers (-h for help)" [parameters: -h, --help] |
+| dkillall | Stop and remove all Docker containers, with options: [--force] [--clean] |
 | dlogs | Display Docker container logs continuously or a specified number of lines. Parameters: [container_name] [--tail N] |
 | dns-refresh | Restart systemd-resolved service; params: [-h for help] |
 | docker_clean_inused_unmonted | Clean up unused Docker objects (containers, images, volumes, networks) -f: force |

@@ -2,20 +2,81 @@
 # Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Stop and remove all Docker containers (-h for help)\" [parameters: -h, --help]"
+        echo "Stop and remove all Docker containers, with options: [--force] [--clean]"
         exit 0
     fi
 done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Stop and remove all Docker containers (-h for help)""
-        exit 0
+
+
+
+# Vérifier que Docker est installé et accessible
+if ! command -v docker &> /dev/null; then
+    echo "Erreur: Docker n'est pas installé ou pas accessible"
+    exit 1
+fi
+
+# Vérifier que Docker daemon est en cours d'exécution
+if ! docker info &> /dev/null; then
+    echo "Erreur: Docker daemon n'est pas en cours d'exécution"
+    exit 1
+fi
+
+echo "=== Arrêt de tous les conteneurs Docker ==="
+
+# Obtenir la liste des conteneurs en cours d'exécution
+running_containers=$(docker ps -q)
+
+if [[ -z "$running_containers" ]]; then
+    echo "Aucun conteneur en cours d'exécution"
+else
+    echo "Conteneurs en cours d'exécution trouvés:"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+    
+    if [[ "$1" == "--force" ]]; then
+        echo "Arrêt forcé des conteneurs..."
+        docker kill $running_containers
+    else
+        echo "Arrêt gracieux des conteneurs..."
+        docker stop $running_containers
     fi
-done
-#stop all containers:
-docker kill $(docker ps -q) 
+    
+    echo "Conteneurs arrêtés avec succès"
+fi
 
-#remove all containers
-docker rm $(docker ps -a -q)
+# Supprimer tous les conteneurs (arrêtés et en cours)
+all_containers=$(docker ps -aq)
 
+if [[ -n "$all_containers" ]]; then
+    echo "Suppression de tous les conteneurs..."
+    docker rm $all_containers
+    echo "Conteneurs supprimés avec succès"
+else
+    echo "Aucun conteneur à supprimer"
+fi
+
+# Option de nettoyage complet
+if [[ "$1" == "--clean" ]]; then
+    echo "=== Nettoyage complet ==="
+    
+    # Supprimer les images non utilisées
+    echo "Suppression des images non utilisées..."
+    docker image prune -af
+    
+    # Supprimer les volumes non utilisés
+    echo "Suppression des volumes non utilisés..."
+    docker volume prune -f
+    
+    # Supprimer les réseaux non utilisés
+    echo "Suppression des réseaux non utilisés..."
+    docker network prune -f
+    
+    # Nettoyage système complet
+    echo "Nettoyage système Docker..."
+    docker system prune -af
+    
+    echo "Nettoyage complet terminé"
+fi
+
+echo "=== Opération terminée ==="
+echo "État actuel:"
+docker ps -a
