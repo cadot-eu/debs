@@ -1,3 +1,34 @@
+# --- Gestion des alias pour certains scripts ---
+ALIASES=(
+  "dlogs"
+  "gcp"
+  "killall:docker-kill-all"
+  "dkillall:docker-kill-all"
+  "dkill:docker-kill"
+  "runsite:site-run"
+  "runcaddy:caddy-run"
+)
+# Supprime d'abord les alias existants
+for alias in "${ALIASES[@]}"; do
+  src="${alias%%:*}"
+  target="${alias##*:}"
+  if [[ "$src" == "$target" ]]; then
+    target="$src"
+  fi
+  [ -f "$TARGET_DIR/$src" ] && rm -f "$TARGET_DIR/$src"
+done
+# Crée les alias
+for alias in "${ALIASES[@]}"; do
+  src="${alias%%:*}"
+  target="${alias##*:}"
+  if [[ "$src" == "$target" ]]; then
+    target="$src"
+  fi
+  if [ -f "$TARGET_DIR/$target" ]; then
+    ln -sf "$TARGET_DIR/$target" "$TARGET_DIR/$src"
+    echo "Alias créé : $src -> $target"
+  fi
+done
 #!/bin/bash
 
 # Option --reset pour supprimer les anciens scripts dans /bin
