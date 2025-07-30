@@ -17,9 +17,14 @@ function show_usage (){
 force=0
 passtest=0
 
-# Charger .env.local si présent
+
+# Charger .env.local si présent localement, sinon dans ~/debs ou ~/git/debs
 if [ -f .env.local ]; then
     export $(grep -v '^#' .env.local | xargs)
+    elif [ -f "$HOME/debs/.env.local" ]; then
+    export $(grep -v '^#' "$HOME/debs/.env.local" | xargs)
+    elif [ -f "$HOME/git/debs/.env.local" ]; then
+    export $(grep -v '^#' "$HOME/git/debs/.env.local" | xargs)
 fi
 
 message="$1"
