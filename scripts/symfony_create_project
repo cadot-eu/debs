@@ -1,0 +1,645 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Install a Symfony project with Docker: ./script.sh PROJECT_NAME""
+        exit 0
+    fi
+done
+PROJECT_NAME=$1
+
+# Définition des couleurs pour l'affichage
+GREEN="\e[32m"
+RED="\e[31m"
+YELLOW="\e[33m"
+NC="\e[0m" # No Color
+
+clear
+echo -e "${GREEN}Lancement de l'installation de Symfony${NC}"
+
+# Installation des dépendances avec Composer
+echo -e "${GREEN}INSTALLATION DES DÉPENDANCES AVEC COMPOSER${NC}"
+echo -e "Les paquets suivants seront installés :\n"
+
+echo -e "${YELLOW}DÉPENDANCES PRINCIPALES :${NC}"
+echo -e "- ${GREEN}symfony/asset-mapper${NC} : Permet de mapper les chemins des fichiers vers une URL pour les servir."
+echo -e "- ${GREEN}symfony/asset${NC} : Gestion des fichiers statiques (CSS, JS, images...)."
+echo -e "- ${GREEN}symfony/twig-pack${NC} : Intègre le moteur de templates Twig."
+echo -e "- ${GREEN}symfony/orm-pack${NC} : Contient Doctrine ORM pour la gestion de la base de données."
+echo -e "- ${GREEN}symfony/mercure-bundle${NC} : Permet la communication en temps réel via le serveur Mercure."
+echo -e "- ${GREEN}symfony/panther${NC} : Outil de test d'interface utilisateur avec un navigateur web."
+echo -e "- ${GREEN}symfony/mailer${NC} : Gestion des e-mails dans Symfony."
+echo -e "- ${GREEN}symfony/ux-turbo${NC} : Amélioration de l'expérience utilisateur avec Turbo.js."
+echo -e "- ${GREEN}symfony/twig-bundle${NC} : Intégration complète de Twig dans Symfony."
+echo -e "- ${GREEN}symfony/monolog-bundle${NC} : Gestion des logs avec Monolog."
+echo -e "- ${GREEN}php-flasher/flasher-symfony${NC} : Affichage de notifications flash."
+echo -e "- ${GREEN}symfonycasts/verify-email-bundle${NC} : Vérification des adresses e-mail."
+echo -e "- ${GREEN}liip/imagine-bundle${NC} : Manipulation et optimisation des images."
+echo -e "- ${GREEN}symfony/translation${NC} : Gestion des traductions et de l'internationalisation."
+echo -e "- ${GREEN}symfonycasts/reset-password-bundle${NC} : Réinitialisation de mot de passe."
+
+echo -e "\n${YELLOW}DÉPENDANCES POUR LE DÉVELOPPEMENT :${NC}"
+echo -e "- ${GREEN}symfony/debug-pack${NC} : Outils de débogage pour Symfony."
+echo -e "- ${GREEN}symfony/maker-bundle${NC} : Génération de code (contrôleurs, entités, formulaires...)."
+echo -e "- ${GREEN}symfony/phpunit-bridge${NC} : Intégration de PHPUnit pour les tests unitaires."
+echo -e "- ${GREEN}phpunit/phpunit${NC} : Outil de tests unitaires pour PHP."
+echo -e "- ${GREEN}doctrine/doctrine-fixtures-bundle${NC} : Gestionnaire de fixtures Doctrine."
+
+echo -e "\n${GREEN}NETTOYAGE${NC}"
+echo -e "- Suppression du répertoire ${RED}.git${NC} pour éviter les conflits de versionnement."
+echo -e "- Arrêt des conteneurs Docker en cours d'exécution."
+echo -e "- Reconstruction des conteneurs Docker pour prendre en compte les nouvelles dépendances."
+echo -e "- On ajoute url site dans .env ${RED}SERVER_NAME=${PROJECT_NAME}.localhost${NC}"
+echo -e "- Modification des permissions des fichiers et répertoires si nécessaire."
+echo -e "- On ajoute la variable le fichier pour XDEBUG dans .vscode"
+echo -e "- On ajoute app comme sécurisé pour git"
+echo -e "\n${YELLOW}Veuillez appuyer sur une touche pour lancer l'installation...${NC}"
+read -n 1 -s
+
+# Vérification des prérequis
+if ! command -v git &> /dev/null; then
+    echo -e "${RED}Erreur : Git n'est pas installé.${NC}"
+    exit 1
+fi
+
+if ! command -v docker &> /dev/null; then
+    echo -e "${RED}Erreur : Docker n'est pas installé.${NC}"
+    exit 1
+fi
+
+if ! command -v docker compose &> /dev/null; then
+    echo -e "${RED}Erreur : Docker Compose n'est pas installé.${NC}"
+    exit 1
+fi
+#vérification de yq
+if ! command -v yq &> /dev/null; then
+    echo -e "${RED}Erreur : yq n'est pas installé, installation en cours...${NC}"
+    sudo apt-get install -y yq
+fi
+
+# Vérification du paramètre
+if [ -z "$1" ]; then
+    echo -e "${RED}Erreur : Vous devez fournir un nom de dossier.${NC}"
+    echo -e "${YELLOW}Usage : $0 mon_projet${NC}"
+    exit 1
+fi
+
+
+# Clonage du projet
+echo -e "${GREEN}Clonage du dépôt Git dans le dossier $PROJECT_NAME...${NC}"
+if git clone https://github.com/cadot-eu/symfony.git "$PROJECT_NAME"; then
+    echo -e "${GREEN}Clonage réussi.${NC}"
+else
+    echo -e "${RED}Échec du clonage. Vérifiez votre connexion ou votre accès SSH.${NC}"
+    exit 1
+fi
+
+cd "$PROJECT_NAME" || exit 1
+
+echo -e "${GREEN}On définit l'url et le réseau dans compose.yams{NC}"
+
+# Construction des conteneurs Docker
+echo -e "${GREEN}Construction des images Docker...${NC}"
+if [ "$1" = "-s" ]; then
+    docker compose build
+else
+    docker compose build --no-cache --pull
+fi
+
+
+
+# Lancement des conteneurs
+echo -e "${GREEN}Lancement des conteneurs Docker...${NC}"
+docker compose up --pull always -d --wait
+# correction git
+docker exec -it "${PROJECT_NAME}-php-1" git config --global --add safe.directory /app
+
+
+# Installation des dépendances Symfony
+echo -e "${GREEN}Installation des librairies Symfony...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" composer require \
+symfony/asset-mapper \
+symfony/asset \
+symfony/twig-pack \
+symfony/orm-pack \
+symfony/mercure-bundle \
+symfony/panther \
+symfony/mailer \
+symfony/ux-turbo \
+symfony/twig-bundle \
+symfony/asset-mapper \
+symfony/asset \
+symfony/twig-pack \
+symfony/monolog-bundle \
+form \
+php-flasher/flasher-symfony \
+symfonycasts/verify-email-bundle \
+liip/imagine-bundle \
+symfony/translation \
+symfonycasts/reset-password-bundle --no-interaction
+
+
+# Ajout des dev
+echo -e "${GREEN}Installation de la debug bar et maker-bundle...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" composer require --dev symfony/debug-pack symfony/maker-bundle symfony/phpunit-bridge  symfony/phpunit-bridge phpunit/phpunit doctrine/doctrine-fixtures-bundle --no-interaction
+
+# Suppression du répertoire .git
+echo -e "${YELLOW}Suppression du répertoire .git...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" rm -rf .git
+
+# Arrêt des conteneurs Docker
+echo -e "${GREEN}Arrêt des conteneurs Docker...${NC}"
+docker compose down
+
+# Reconstruction après modifications
+echo -e "${GREEN}Reconstruction des conteneurs Docker...${NC}"
+docker compose build
+
+# Relancement des conteneurs
+echo -e "${GREEN}Relancement des conteneurs Docker...${NC}"
+docker compose up -d
+
+# Affichage des conteneurs actifs
+echo -e "${GREEN}Liste des conteneurs actifs :${NC}"
+docker ps
+
+# Changer les permissions
+echo -e "${GREEN}Changement des permissions${NC}"
+sudo chown $USER: .*
+sudo chown $USER: *
+sudo chown -R $USER: assets bin composer.* config LICENSE migrations public src templates var vendor
+sudo chown $USER: ../$1
+
+# On adapte la variable MERCURE de .env
+echo -e "${GREEN}Adaptation de l'url Mercure dans le .env{NC}"
+sed -i 's|example.com|localhost|' .env
+
+
+#si on a pas de .env.local avec MAILER_FROM et MAILER_FROM_NAME
+echo -e "${GREEN}Ajout de MAILER_FROM et MAILER_FROM_NAME dans le .env{NC}"
+if [ ! -f .env.local ]; then
+    touch .env.local
+    if ! grep -q "MAILER_FROM=" .env.local; then
+        echo "MAILER_FROM=a@aa.aa" >> .env.local
+    fi
+    if ! grep -q "MAILER_FROM_NAME=" .env.local; then
+        echo "MAILER_FROM_NAME=Symfony" >> .env.local
+    fi
+fi
+
+echo -e "${GREEN}Ajout d'un service updateMercure{NC}"
+mkdir -p "src/Service"
+cat > "src/Service/MercureUpdateService.php" <<EOF
+<?php
+
+namespace App\Service;
+
+use Symfony\Component\Notifier\Message\DesktopMessage;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Update;
+
+class MercureUpdateService
+{
+    private \$hub;
+    public function __construct(
+        HubInterface \$hub
+    ) {
+        \$this->hub = \$hub;
+    }
+
+    public function update(String \$message, \$type = 'success', string \$chanel = 'flux'): void
+    {
+         \$update = new Update(
+             \$chanel,
+             json_encode(['type' => \$type, 'message' => \$message])
+         );
+        \$this->hub->publish(\$update);
+    }
+}
+EOF
+#ajout dans services.yaml
+cat >> "config/services.yaml" <<EOF
+    App\Service\MercureUpdateService:
+        arguments:
+            - "@Symfony\\\Component\\\Mercure\\\HubInterface"
+
+EOF
+
+# on configure liip imagine
+echo -e "${GREEN}Configuration de liip imagine{NC}"
+cat > "config/routes/liip_imagine.yaml" <<EOF
+_liip_imagine:
+    resource: "@LiipImagineBundle/Resources/config/routing.yaml"
+
+EOF
+
+cat > "config/packages/liip_imagine.yaml" <<EOF
+# See dos how to configure the bundle: https://symfony.com/doc/current/bundles/LiipImagineBundle/basic-usage.html
+# pour allfilter documentation on https://imagine.readthedocs.io/en/stable/usage/effects.html
+parameters:
+#liip_imagine.optipng.binary: /usr/bin/optipng
+liip_imagine:
+    messenger: false
+    twig:
+        mode: lazy
+    webp:
+        generate: true
+    # valid drivers options include "gd" or "gmagick" or "imagick"
+    driver: "imagick"
+    # configure resolvers
+    resolvers:
+        # setup the default resolver
+        default:
+            # use the default web path
+            web_path: ~
+    controller:
+        #redirect_response_code: 302 #pour éviter erreur https to http
+    # your filter sets are defined here
+    filter_sets:
+        cache: ~
+        carousel:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    heighten: 300
+            # post_processors:
+            #   optipng: { strip_all: false, level: 7 }
+
+        bande:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                crop:
+                    size: [700, 200]
+                    start: [0, 0]
+                    mode: outbound
+
+        bandeau:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 1920
+                    allow_upscale: false
+                #allfilter: ["colorize:#f18322,gamma:1.6"]
+
+        bandeaufixe:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [1300, 500]
+                    mode: outbound
+
+        petitbandeau:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [300, 200]
+                    mode: outbound
+
+        petitbanderole:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [300, 50]
+                    mode: outbound
+
+        lazy:
+            jpeg_quality: 20
+            png_compression_level: 1
+            filters:
+                relative_resize:
+                    widen: 64
+                    allow_upscale: false
+
+        fullhd:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 1920
+                    allow_upscale: false
+
+        hd:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 1080
+                    allow_upscale: false
+
+        grand:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 900
+                    allow_upscale: false
+
+        moyen:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 600
+                    allow_upscale: false
+
+        moyenback:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 600
+                    allow_upscale: false
+                allfilter: ["gamma:4"]
+
+        moyencarree:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [550, 550]
+                    mode: outbound
+
+        petit:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 300
+                    allow_upscale: false
+
+        petitcarree:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [300, 300]
+                    mode: outbound
+
+        minicarree:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [128, 128]
+                    mode: outbound
+
+        iconecarree:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                thumbnail:
+                    size: [32, 32]
+                    mode: outbound
+
+        mini:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 128
+                    allow_upscale: false
+
+        icone50:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 50
+                    allow_upscale: false
+
+        label:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 100
+                    allow_upscale: false
+
+        icone:
+            jpeg_quality: 80
+            png_compression_level: 6
+            filters:
+                auto_rotate: ~
+                relative_resize:
+                    widen: 32
+
+        favicon:
+            png_compression_level: 6
+            format: png
+            filters:
+                relative_resize:
+                    widen: 32
+
+EOF
+
+#ajout de Liip\ImagineBundle\LiipImagineBundle::class => ['all' => true],
+echo -e "${GREEN}Ajout du bundle liip...${NC}"
+sed -i "s/];/Liip\\\ImagineBundle\\\LiipImagineBundle::class => ['all' => true],];/g" config/bundles.php
+
+
+# On lance la commande pour installer flasher
+echo -e "${GREEN}Installation de flasher...${NC}"
+docker exec -it "${PROJECT_NAME}-php-1" php bin/console flasher:install
+
+
+#on mofifie monolog
+echo -e "${GREEN}Modification de monolog...${NC}"
+cat > "config/packages/monolog.yaml" <<EOF
+# config/packages/monolog.yaml
+monolog:
+    channels: ["deprecation", "security", "app"]
+
+    handlers:
+        # Handler principal qui capture les erreurs
+        main:
+            type: fingers_crossed
+            action_level: error
+            handler: nested
+            buffer_size: 50
+            excluded_http_codes: [404, 405]
+
+        # Fichier de log principal (erreurs et warnings)
+        nested:
+            type: rotating_file
+            max_files: 30
+            path: "%kernel.logs_dir%/%kernel.environment%.log"
+            level: warning
+            formatter: monolog.formatter.line
+
+        # Logs pour les messages d'information uniquement
+        info_file:
+            type: rotating_file
+            max_files: 30
+            path: "%kernel.logs_dir%/%kernel.environment%.info.log"
+            level: info
+            max_level: info # Uniquement niveau info, pas au-dessus
+            channels: ["!deprecation"]
+            formatter: monolog.formatter.line
+
+        # Logs de dépréciation séparés
+        deprecation:
+            type: rotating_file
+            max_files: 30
+            path: "%kernel.logs_dir%/%kernel.environment%.deprecations.log"
+            level: debug
+
+        # Filtre pour n'attraper que les dépréciations de PHP
+        deprecation_filter:
+            type: filter
+            handler: deprecation
+            max_level: info
+            channels: ["php"]
+
+        # Handler syslog existant
+        syslog_handler:
+            type: syslog
+            level: debug
+
+        # Handler console existant
+        console:
+            type: console
+            process_psr_3_messages: false
+            channels: ["!event", "!doctrine", "!console"]
+
+when@dev:
+    monolog:
+        handlers:
+            # En dev, on réduit le niveau pour capturer plus d'informations
+            nested:
+                level: debug
+
+            # On conserve les logs d'information dans un fichier dédié
+            info_file:
+                path: "%kernel.logs_dir%/dev.info.log"
+
+            # Logs détaillés pour l'application en dev
+            app_debug:
+                type: rotating_file
+                max_files: 10
+                path: "%kernel.logs_dir%/dev.errorwarnings.log"
+                level: debug
+                channels: ["app"]
+
+when@test:
+    monolog:
+        handlers:
+            main:
+                type: fingers_crossed
+                action_level: error
+                handler: nested
+                excluded_http_codes: [404, 405]
+
+            nested:
+                type: rotating_file
+                max_files: 10
+                path: "%kernel.logs_dir%/test.log"
+                level: debug
+
+when@prod:
+    monolog:
+        handlers:
+            # En prod, on conserve le comportement existant
+            main:
+                type: fingers_crossed
+                action_level: error
+                handler: grouped
+                excluded_http_codes: [404, 405]
+
+            # Groupe pour combiner fichier et email
+            grouped:
+                type: group
+                members: [nested, error_mailer]
+
+            # Configuration des emails critiques
+            # error_mailer:
+            #     type: fingers_crossed
+            #     action_level: critical
+            #     handler: symfony_mailer
+            #     excluded_http_codes: [404, 405]
+
+            # symfony_mailer:
+            #     type: symfony_mailer
+            #     from_email: "%env(MAILER_FROM)%"
+            #     to_email: "%env(MAILER_TO)%"
+            #     subject: "[%kernel.environment%] Erreur critique: %%message%%"
+            #     level: debug
+            #     formatter: monolog.formatter.html
+            #     content_type: text/html
+
+            # Logs de sécurité séparés en prod
+            security_file:
+                type: rotating_file
+                max_files: 30
+                path: "%kernel.logs_dir%/security.log"
+                level: info
+                channels: ["security"]
+EOF
+
+#on supprime ce qu'il y a dans var pour résoudre prb log assès
+echo -e "${GREEN}Suppression de var${NC}"
+rm -rf var
+
+# on aloute debug listen dans .vscode/launch.json
+mkdir -p .vscode
+cat > ".vscode/launch.json" <<EOF
+{
+  "configurations": [
+    {
+      "name": "Listen for Xdebug",
+      "type": "php",
+      "request": "launch",
+      "port": 9003,
+      "pathMappings": {
+        "/app": "${workspaceFolder}"
+      }
+    }
+  ]
+}
+EOF
+
+# on modifie l'url du site en ajoutant au début de .env
+echo -e "${GREEN}Ajout de l'url du site dans le .env{NC}"
+if ! grep -q "APP_URL=" .env; then
+    echo "SERVER_NAME=${PROJECT_NAME}.localhost" >> .env
+fi
+
+#on met le debug en route
+echo -e "${GREEN}Activation du debug dans le .env{NC}"
+if ! grep -q "DEBUG=" .env; then
+    echo "XDEBUG_MODE=debug" >> .env
+fi
+
+#on remplace php par   php:     networks:       - hosted dans compose.yaml
+yq -y '(.services.php.networks = ["hosted"]) | (.services.database.networks = ["hosted"]) | (.networks.hosted = {"driver": "bridge", "name": "'"${PROJECT_NAME}"'"})' compose.yaml > tmp.yaml && mv tmp.yaml compose.yaml
+
+# on tue les docker pour passer à la bonne url
+dc down && dc up -d
+
+
+# On informe qu'il faut créer le repoistory dans github
+echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"

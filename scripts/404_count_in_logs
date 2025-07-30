@@ -1,0 +1,49 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Counts and lists 404 error URLs from log files in a directory. Usage: $0 /path/to/logs""
+        exit 0
+    fi
+done
+
+# Vérifie que le chemin du dossier a été fourni
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 /chemin/vers/le/dossier/de/logs"
+    exit 1
+fi
+
+LOG_DIR="$1"
+
+# Vérifie que le dossier existe
+if [ ! -d "$LOG_DIR" ]; then
+    echo "Erreur : le dossier spécifié n'existe pas."
+    exit 1
+fi
+
+# Fichier temporaire pour stocker les résultats
+TEMP_FILE=$(mktemp)
+URL_COUNT_FILE=$(mktemp)
+
+# Recherche de toutes les URL qui génèrent des erreurs 404
+find "$LOG_DIR" -name "*.log" -type f -exec grep -l "NotFoundHttpException" {} \; | while read -r log_file; do
+    grep "NotFoundHttpException" "$log_file" | grep -o '"GET [^"]*"' | sed 's/"GET \(.*\)"/\1/' >> "$TEMP_FILE"
+done
+
+# Compter les occurrences de chaque URL en utilisant sort et uniq
+# Cette approche évite les problèmes avec les caractères spéciaux dans les URLs
+sort "$TEMP_FILE" | uniq -c | sort -nr > "$URL_COUNT_FILE"
+
+# Affiche les résultats avec un format approprié
+echo "URL                                                          Nombre d'erreurs 404"
+echo "--------------------------------------------------------------------------"
+
+# Lire directement depuis le fichier trié
+while read -r line; do
+    count=$(echo "$line" | awk '{print $1}')
+    url=$(echo "$line" | cut -d' ' -f2-)
+    printf "%-60s %d\n" "$url" "$count"
+done < "$URL_COUNT_FILE"
+
+# Supprime les fichiers temporaires
+rm "$TEMP_FILE" "$URL_COUNT_FILE"

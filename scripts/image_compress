@@ -1,0 +1,13 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Optimize image files (PNG, GIF, TIFF, BMP, JPG, JPEG) in current directory and subdirectories using optipng and jpegoptim.""
+        exit 0
+    fi
+done
+# Optimiser les fichiers PNG, GIF, TIFF, et BMP avec optipng
+find . -type f \( -iname "*.png" -o -iname "*.PNG" -o -iname "*.gif" -o -iname "*.GIF" -o -iname "*.tif" -o -iname "*.TIF" -o -iname "*.tiff" -o -iname "*.TIFF" -o -iname "*.bmp" -o -iname "*.BMP" \) -exec optipng {} \;
+
+# Optimiser les fichiers JPG et JPEG avec jpegoptim
+find . -type f \( -iname "*.jpg" -o -iname "*.JPG" -o -iname "*.jpeg" -o -iname "*.JPEG" \) -exec jpegoptim -o 5 {} \;

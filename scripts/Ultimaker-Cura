@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Launch Ultimaker Cura 5.2.1 with NVIDIA PRIME render offload support. Parameters: [AppImage options].""
+        exit 0
+    fi
+done
+ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia ./Ultimaker-Cura-5.2.1-linux-modern.AppImage

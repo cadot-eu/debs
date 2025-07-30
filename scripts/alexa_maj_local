@@ -1,0 +1,40 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Fetch Alexa skill files (interaction model and manifest) using the skill ID from .ask/ask-states.json." Parameters: none."
+        exit 0
+    fi
+done
+
+# Chemin vers le fichier .ask/ask-states.json
+ASK_STATES_PATH="./.ask/ask-states.json"
+
+# Vérifier si le fichier existe
+if [[ ! -f "$ASK_STATES_PATH" ]]; then
+    echo "Erreur : Le fichier $ASK_STATES_PATH n'existe pas. Assurez-vous que le projet est configuré avec ask-cli."
+    exit 1
+fi
+
+# Extraire le Skill ID depuis .ask/ask-states.json
+SKILL_ID=$(jq -r '.profiles.default.skillId' "$ASK_STATES_PATH")
+
+# Vérifier si le Skill ID a été correctement extrait
+if [[ -z "$SKILL_ID" || "$SKILL_ID" == "null" ]]; then
+    echo "Erreur : Impossible d'extraire le Skill ID du fichier .ask/ask-states.json."
+    exit 1
+fi
+
+echo "Skill ID trouvé : $SKILL_ID"
+
+# Utiliser ask CLI pour récupérer les fichiers
+echo "Téléchargement des fichiers depuis Alexa Developer Console..."
+ask smapi get-interaction-model --skill-id $SKILL_ID --locale fr-FR > ./skill-package/interactionModels/custom/fr-FR.json
+ask smapi get-skill-manifest --skill-id $SKILL_ID > ./skill-package/skill.json
+# Vérifier si la récupération a réussi
+if [[ $? -eq 0 ]]; then
+    echo "Téléchargement réussi ! Les fichiers locaux ont été mis à jour."
+else
+    echo "Erreur : Échec du téléchargement des fichiers."
+    exit 1
+fi

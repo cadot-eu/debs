@@ -1,35 +1,11 @@
-#!/bin/bash
-if [[ "$1" == "-h" ]]; then echo ""Generates README.md from scripts in scripts/ directory, showing script names, descriptions, usage, and examples." Parameters: -h (help)"; exit 0; fi
-# Génère dynamiquement le README.md à partir des scripts présents dans scripts/
-
-SCRIPTS_DIR="$(dirname "$0")"
-README="$(dirname "$0")/../README.md"
-
-cat > "$README" <<EOF
-# Scripts disponibles
-
-| Script | Description | Usage | Exemple |
-|--------|-------------|-------|---------|
-EOF
-
-for script in "$SCRIPTS_DIR"/*.sh; do
-    name="$(basename "$script")"
-    # Récupère l'aide du script
-    helpout=$(bash "$script" -h 2>/dev/null | head -n 10)
-    desc=$(echo "$helpout" | grep -m1 -v Usage | grep -v Exemple | head -n1 | sed 's/^ *//')
-    usage=$(echo "$helpout" | grep -m1 Usage | sed 's/^ *//')
-    exemple=$(echo "$helpout" | grep -m1 Exemple | sed 's/^ *//')
-    [ -z "$desc" ] && desc="-"
-    [ -z "$usage" ] && usage="-"
-    [ -z "$exemple" ] && exemple="-"
-    echo "| $name | $desc | $usage | $exemple |" >> "$README"
-done
-
-echo -e "\nREADME généré automatiquement à partir des scripts du dossier scripts/." >> "$README"
-  echo "Exemple: rotate-screen"
-  exit 0
-fi
 #!/bin/sh
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Rotate screen and input devices between normal/left/inverted/right orientations."
+        exit 0
+    fi
+done
 
 # Find the line in "xrandr -q --verbose" output that contains current screen orientation and "strip" out current orientation.
 

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Usage: $0 [-h] - Bring down the WireGuard interface defined in ~/pcmick.conf""
+        exit 0
+    fi
+done
+sudo wg-quick down ~/pcmick.conf

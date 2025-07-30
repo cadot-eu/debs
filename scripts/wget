@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Download a file with resuming support, optional speed limit (default: 300k), and insecure SSL; params: URL [speed]""
+        exit 0
+    fi
+done
+curl $1 -C - -k -O  --limit-rate ${2:-300k}

@@ -1,5 +1,11 @@
 #!/bin/bash
-if [[ "$1" == "-h" ]]; then echo "Generate an M3U playlist from audio files in a directory. Parameters: [directory] (default: current directory)."; exit 0; fi
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Generate an M3U playlist from audio files in a directory. Parameters: [directory] (default: current directory)"
+        exit 0
+    fi
+done
 
 # Définir le répertoire à traiter
 # Si aucun répertoire n'est spécifié en argument, utiliser le répertoire courant (".")

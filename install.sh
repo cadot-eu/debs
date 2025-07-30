@@ -1,35 +1,5 @@
-# --- Gestion des alias pour certains scripts ---
-ALIASES=(
-    "dlogs"
-    "gcp"
-    "killall:docker-kill-all"
-    "dkillall:docker-kill-all"
-    "dkill:docker-kill"
-    "runsite:site-run"
-    "runcaddy:caddy-run"
-)
-# Supprime d'abord les alias existants
-for alias in "${ALIASES[@]}"; do
-    src="${alias%%:*}"
-    target="${alias##*:}"
-    if [[ "$src" == "$target" ]]; then
-        target="$src"
-    fi
-    [ -f "$TARGET_DIR/$src" ] && rm -f "$TARGET_DIR/$src"
-done
-# Crée les alias
-for alias in "${ALIASES[@]}"; do
-    src="${alias%%:*}"
-    target="${alias##*:}"
-    if [[ "$src" == "$target" ]]; then
-        target="$src"
-    fi
-    if [ -f "$TARGET_DIR/$target" ]; then
-        ln -sf "$TARGET_DIR/$target" "$TARGET_DIR/$src"
-        echo "Alias créé : $src -> $target"
-    fi
-done
 #!/bin/bash
+
 
 # Option --reset pour supprimer les anciens scripts dans /bin
 RESET=0
@@ -39,27 +9,31 @@ for arg in "$@"; do
     fi
 done
 
+
 if [ $RESET -eq 1 ]; then
-    LEGACY_BIN="/bin"
-    SRC_DIR_LEGACY="$(dirname "$0")/scripts"
-    for script in "$SRC_DIR_LEGACY"/*; do
-        base="$(basename "$script")"
-        name="${base%.sh}"
-        if [ -f "$LEGACY_BIN/$name" ]; then
-            sudo rm -f "$LEGACY_BIN/$name"
-            echo "Ancien script supprimé de $LEGACY_BIN : $name"
-        fi
+    for LEGACY_BIN in /bin /usr/bin; do
+        SRC_DIR_LEGACY="$(dirname "$0")/scripts"
+        for script in "$SRC_DIR_LEGACY"/*; do
+            base="$(basename "$script")"
+            name="${base%.sh}"
+            # Supprime le nom normal, le nom avec _ à la place de - et le nom avec - à la place de _
+            for variant in "$name" "${name//-/_}" "${name//_/-}"; do
+                if [ -f "$LEGACY_BIN/$variant" ]; then
+                    sudo rm -f "$LEGACY_BIN/$variant"
+                    echo "Ancien script supprimé de $LEGACY_BIN : $variant"
+                fi
+            done
+        done
     done
 fi
 
-# Installe tous les scripts du dossier scripts/ dans ~/bin (ou dossier passé en argument)
-TARGET_DIR="${1:-$HOME/bin}"
+TARGET_DIR="$HOME/bin"
 SRC_DIR="$(dirname "$0")/scripts"
 
 if [ ! -d "$TARGET_DIR" ]; then
     mkdir -p "$TARGET_DIR"
 fi
-
+rm -f "$TARGET_DIR"/*
 for script in "$SRC_DIR"/*; do
     base="$(basename "$script")"
     [ "$base" = "install.sh" ] && continue
@@ -92,16 +66,18 @@ case ":$PATH:" in
 esac
 
 echo "Tous les scripts ont été installés dans $TARGET_DIR."
+
 if [ $RESET -eq 1 ]; then
-    LEGACY_BIN="/bin"
-    SRC_DIR_LEGACY="$(dirname "$0")/scripts"
-    for script in "$SRC_DIR_LEGACY"/*; do
-        base="$(basename "$script")"
-        name="${base%.sh}"
-        if [ -f "$LEGACY_BIN/$name" ]; then
-            sudo rm -f "$LEGACY_BIN/$name"
-            echo "Ancien script supprimé de $LEGACY_BIN : $name"
-        fi
+    for LEGACY_BIN in /bin /usr/bin; do
+        SRC_DIR_LEGACY="$(dirname "$0")/scripts"
+        for script in "$SRC_DIR_LEGACY"/*; do
+            base="$(basename "$script")"
+            name="${base%.sh}"
+            if [ -f "$LEGACY_BIN/$name" ]; then
+                sudo rm -f "$LEGACY_BIN/$name"
+                echo "Ancien script supprimé de $LEGACY_BIN : $name"
+            fi
+        done
     done
 fi
 

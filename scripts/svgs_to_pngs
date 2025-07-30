@@ -1,0 +1,13 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Convert SVG files to PNG with optional width parameter (default: 1024). Parameters: [width]"
+        exit 0
+    fi
+done
+#parameter 1 pour width sinon 1024 par defaut
+width=${1:-1024}  
+for i in *.svg; 
+do inkscape -w "$width"  "$i" --export-filename "${i%svg}png";
+done

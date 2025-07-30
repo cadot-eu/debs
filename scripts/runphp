@@ -1,5 +1,11 @@
 #!/bin/bash
-if [[ "$1" == "-h" ]]; then echo ""Setup PHP/nginx dev environment in current directory, create docker-compose.yml and Caddyfile, parameters: none""; exit 0; fi
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Initialize PHP/nginx Docker environment with Caddy proxy (-h for help)" [params: none]"
+        exit 0
+    fi
+done
 
 # Get current directory name
 result=${PWD##*/}

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Usage: $(basename "$0") [-h] - Configures mouse pointer acceleration via ~/.Xmodmap.""
+        exit 0
+    fi
+done
+echo "pointer = 1 25 3 4 5 6 7 8 9" >> ~/.Xmodmap

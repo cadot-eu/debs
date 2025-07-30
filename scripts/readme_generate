@@ -1,0 +1,54 @@
+
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Generate README.md table from script help texts (-h options) in the scripts directory. Parameters: none."
+        exit 0
+    fi
+done
+
+SCRIPTS_DIR="$(dirname "$0")"
+README="$(pwd)/README.md"
+
+cat > "$README" <<EOF
+# Scripts disponibles
+
+| Script | Description | Usage | Exemple |
+|--------|-------------|-------|---------|
+EOF
+
+
+
+echo "|--------|-------------|-------|---------|" >> "$README"
+
+for script in "$SCRIPTS_DIR"/*; do
+    # Ignore ce script lui-même et les fichiers non exécutables
+    [ "$script" = "$SCRIPTS_DIR/readme_generate" ] && continue
+    [ ! -x "$script" ] && continue
+    name="$(basename "$script")"
+    echo "Test aide : $name" 1>&2
+    # Détection multi-lignes : for ... do + if ... -h sur plusieurs lignes
+    if grep -zqP 'for\s+[a-zA-Z0-9_]+\s+in\s+"\$@";?\s*do[\s\S]*?if\s+\[\[.*(-h|--help)' "$script" \
+    || grep -qE 'if +\[\[? +"?\$[a-zA-Z0-9_]+"? +([=]{1,2}) +(-h|--help)' "$script"; then
+        # Récupère l'aide du script avec timeout pour éviter les blocages
+        helpout=$(timeout 2s bash "$script" -h 2>/dev/null | head -n 10)
+        desc=$(echo "$helpout" | grep -m1 -v Usage | grep -v Exemple | head -n1 | sed 's/^ *//')
+        usage=$(echo "$helpout" | grep -m1 Usage | sed 's/^ *//')
+        exemple=$(echo "$helpout" | grep -m1 Exemple | sed 's/^ *//')
+        [ -z "$desc" ] && desc="-"
+        [ -z "$usage" ] && usage="-"
+        [ -z "$exemple" ] && exemple="-"
+        echo "| $name | $desc | $usage | $exemple |" >> "$README"
+    else
+        echo "[WARN] $name ne gère pas l'option -h" 1>&2
+        echo "| $name | - | - | - |" >> "$README"
+        rm -f "$README"
+        exit 1
+    fi
+done
+
+echo -e "\nREADME généré automatiquement à partir des scripts du dossier scripts/." >> "$README"
+
+# Affiche explicitement le chemin du README généré (toujours dans le dossier courant)
+echo "[INFO] README généré : ./README.md"

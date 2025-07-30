@@ -1,4 +1,11 @@
 #!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Set CPU governors to powersave for cores 0-7. Parameters: None."
+        exit 0
+    fi
+done
 for i in {0..7};
 do sudo cpufreq-set -c $i -g powersave;
 done;

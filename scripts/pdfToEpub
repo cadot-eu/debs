@@ -1,0 +1,10 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Convert an ebook file to EPUB format with heuristics, justified text, and no cover. Parameters: <input_file>"
+        exit 0
+    fi
+done
+ebook-convert "$1" "$1".epub  --enable-heuristics --change-justification=justify --remove-first-image  --no-default-epub-cover 
+

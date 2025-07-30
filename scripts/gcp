@@ -172,3 +172,58 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
 else
     echo "no modifs ;-)"
 fi
+            echo "Génération du commit par Deepseek..."
+            # Prompt strict pour forcer une réponse JSON et limiter la taille
+            PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
+            # Utiliser un fichier temporaire pour éviter la limite d'arguments
+            TMP_PROMPT=$(mktemp)
+            echo -n "$PROMPT" > "$TMP_PROMPT"
+            TMP_JSON=$(mktemp)
+            # Générer le JSON manuellement pour éviter la limite d'arguments
+            printf '{"model": "deepseek-chat", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
+            jq -Rs . < "$TMP_PROMPT" >> "$TMP_JSON"
+            printf '}]}' >> "$TMP_JSON"
+            rm -f "$TMP_PROMPT"
+            if [ ! -s "$TMP_JSON" ]; then
+                echo "Erreur lors de la préparation du prompt pour Deepseek (json)."
+                rm -f "$TMP_JSON"
+                exit 1
+            fi
+            raw_response=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $DEEPSEEK" \
+            --data-binary "@${TMP_JSON}" | jq -r '.choices[0].message.content')
+            rm -f "$TMP_JSON"
+            # Nettoyer les balises ``` et ```json éventuelles de la réponse Deepseek
+            json_commit=$(echo "$raw_response" | tr -d '\r' | tr -d '\n' | sed -E 's/^```json//;s/^```//;s/```$//;s/```//g')
+            # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
+            if ! echo "$json_commit" | grep -q '^{.*}$'; then
+                echo "Erreur: la réponse Deepseek n'est pas un objet JSON. Réponse brute :"
+                echo "$raw_response"
+                exit 1
+            fi
+            commit_title=$(echo "$json_commit" | jq -r '.title')
+            commit_body=$(echo "$json_commit" | jq -r '.body')
+            if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
+                echo "Erreur lors de la génération du message de commit avec Deepseek. Réponse brute :"
+                echo "$raw_response"
+                exit 1
+            fi
+            echo "Message de commit généré : $commit_title"
+            message="$commit_title"
+            # Ajoute le body si présent
+            if [ -n "$commit_body" ] && [ "$commit_body" != "null" ]; then
+                message="$commit_title\n\n$commit_body"
+            fi
+        fi
+        
+        git commit -m "$message"
+        git submodule foreach "git add . && gcp '$message'"
+        git add .
+        git commit -m "$message"
+        git push --all
+        git push --tags
+    fi
+else
+    echo "no modifs ;-)"
+fi

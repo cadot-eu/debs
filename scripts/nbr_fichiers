@@ -1,0 +1,10 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Count files in each directory and sort by count; parameters: none.""
+        exit 0
+    fi
+done
+for i in *; do echo -n $i " " ; find $i |wc -l; done | sort -n -k2
+

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Usage: $(basename "$0") [-h] - Adjusts kernel network buffer sizes (rmem_max/wmem_max=7500000).""
+        exit 0
+    fi
+done
+sysctl -w net.core.rmem_max=7500000
+sysctl -w net.core.wmem_max=7500000

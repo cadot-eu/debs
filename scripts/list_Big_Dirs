@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Show top 30 largest files/dirs in /, sorted by size (-h human-readable, -S no subdirs)""
+        exit 0
+    fi
+done
+du -Sh / 2>/dev/null | sort -rh | head -n 30

@@ -1,5 +1,11 @@
 #!/bin/bash
-if [[ "$1" == "-h" ]]; then echo ""Download a file using wget with resume support; takes <nom_de_fichier> as the URL to download.""; exit 0; fi
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Download a file using wget with resume support (-c) and content-disposition, takes a single URL parameter.""
+        exit 0
+    fi
+done
 
 # Vérifie si le nombre d'arguments est correct
 if [ "$#" -ne 1 ]; then

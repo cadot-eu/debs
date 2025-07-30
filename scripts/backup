@@ -1,14 +1,12 @@
 #!/bin/bash
-if [[ "$1" == "-h" ]]; then
-    echo "Description : Script $0 (ajoutez une description ici)"
-    echo "Usage : $0 [options]"
-    echo "Exemple : $0"
-    exit 0
-fi
-git submodule deinit $1
-git rm --cached -r $1 -f
-sudo rm .git/modules/$1 -R
-sudo rm -R $1
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Backup script using duplicity (params: full, local, or none for incremental)""
+        exit 0
+    fi
+done
+result=${PWD##*/}
 
 
 if [ -f .env ]; then

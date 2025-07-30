@@ -1,0 +1,20 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Update git submodules to their latest main branch versions. Parameters: none.""
+        exit 0
+    fi
+done
+
+if [ -f ".gitmodules" ]; then
+
+git submodule foreach git checkout main 
+git submodule foreach git pull
+
+if [ -d "src/Command/crudmick" ]; then 
+  cd src/Command/crudmick
+  git pull
+fi
+
+fi

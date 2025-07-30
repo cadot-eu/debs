@@ -1,0 +1,14 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Description: Restarts a WireGuard VPN connection, updates routing, and tests connectivity. Parameters: none."
+        exit 0
+    fi
+done
+sudo wg-quick down ~/pcmick.conf
+sudo wg-quick up ~/pcmick.conf
+sudo ip route del 10.8.0.0/24 dev pcmick
+sudo ip route add 10.8.0.0/24 dev pcmick
+ping 172.217.168.78
+

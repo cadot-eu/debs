@@ -1,48 +1,11 @@
 #!/bin/bash
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    echo -e "\nRestaure une sauvegarde duplicity."
-    echo "Usage: restore [full|file|list] [fichier]"
-    echo "Exemple: restore file monfichier.txt"
-    exit 0
-fi
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-fi
-if [ -f .env.local ]; then
-    export $(grep -v '^#' .env.local | xargs)
-fi
-
-if  [ -n "$BACKUP_URL" ]; then
-    if [ -z $BACKUP_URL ]; then
-        echo "no parameters "
-    else
-        case "$1" in
-            full )
-            duplicity restore $BACKUP_URL ./__restore --no-encryption ;;
-            file )
-                if [ -z "$2" ]
-                then
-                    echo "name of file?"
-                else
-                    DIR="$(dirname "${2}")" ;
-                    mkdir -p "$DIR";
-                    duplicity --file-to-restore "$2" $BACKUP_URL "$2"  --no-encryption
-            fi;;
-            list )
-            duplicity list-current-files $BACKUP_URL ;;
-            * )
-            echo "get a parameter full,file or list" ;;
-        esac
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Commit changes with optional test bypass (-p|--passtest) or help (-h|--help).""
+        exit 0
     fi
-    
-else
-    echo "parameters empty in .env, get BACKUP_URL"
-fi
-
-  echo "Exemple: gc 'update'"
-  exit 0
-fi
-#!/bin/bash
+done
 
 function show_usage (){
     printf "Usage: $0 [options ]\n"

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Usage: $0 [-h] - Fetches all remote branches and tracks them locally, then pulls all updates.""
+        exit 0
+    fi
+done
+#ajout des branches
+git fetch --all
+git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
+git pull --all

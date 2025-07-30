@@ -1,6 +1,11 @@
 #!/bin/bash
-if [[ "$1" == "-h" ]]; then echo "Affiche les logs d'un conteneur Docker (paramètre: NOM_CONTENEUR, optionnel, défaut: nom du répertoire courant)."; exit 0; fi
-
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Display Docker container logs continuously or a specified number of lines. Parameters: [container_name] [--tail N]"
+        exit 0
+    fi
+done
 # Variables par défaut
 nombre_de_logs=10
 nom_du_docker=""

@@ -1,4 +1,11 @@
 #!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Run Docker Compose for Symfony, auto-generating configs; params: none""
+        exit 0
+    fi
+done
 # run docker compose and change DIR in docker-compose by current directory
 result=${PWD##*/}
 if [ ! -f docker-compose.yml ]

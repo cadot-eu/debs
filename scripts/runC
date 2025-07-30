@@ -1,0 +1,62 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Adds current directory as a service to compose.yaml and creates Caddyfile; params: none""
+        exit 0
+    fi
+done
+set -e
+
+# Nom du répertoire actuel
+REPO_NAME=$(basename "$PWD")
+echo "Nom du répertoire actuel : $REPO_NAME"
+
+# Chemin vers docker-compose.yaml
+COMPOSE_FILE="compose.yaml"
+
+# Générer un port aléatoire entre 20000 et 30000
+PORT=$(shuf -i 20000-30000 -n 1)
+
+# Vérifier si le service existe déjà avec grep
+if ! grep -q " ${REPO_NAME}:" "$COMPOSE_FILE"; then
+    echo "Ajout du service $REPO_NAME dans $COMPOSE_FILE..."
+    # Ajouter le service au fichier compose.yaml par sed
+    sed -i "/services:/a\ \ $REPO_NAME:\n\ \ \ \ image: symfonymick-dev_gd-imagick\n\ \ \ \ container_name: $REPO_NAME\n\ \ \ \ volumes:\n\ \ \ \ \ \ - .:/app\n\ \ \ \ restart: always\n\ \ \ \ ports:\n\ \ \ \ \ \ - $PORT:80" "$COMPOSE_FILE"
+else
+    echo "Le service $REPO_NAME existe déjà dans $COMPOSE_FILE"
+    
+    # Extraire le port depuis la section 'ports' du service
+    PORT=$(awk -v service="$REPO_NAME" '
+        $1 == "services:" {in_services=1}
+        in_services && $1 == service ":" {in_service=1}
+        in_service && $1 == "ports:" {in_ports=1}
+        in_ports && $0 ~ /^[[:space:]]*- / {gsub(/[[:space:]]*"/, "", $2); gsub(/"/, "", $2); split($2, arr, ":"); print arr[1]; exit}
+    ' "$COMPOSE_FILE")
+    
+    echo "Le port du service $REPO_NAME est $PORT"
+fi
+
+# Chemin vers le Caddyfile
+CADDYFILE="Caddyfile"
+# Supprimer le fichier Caddyfile existant
+rm -f "$CADDYFILE"
+echo "Création du fichier $CADDYFILE..."
+# Utilisation de 'echo' pour garantir l'expansion de la variable
+echo "{
+   email letsencrypt@cadot.eu
+   acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+$REPO_NAME.localhost {
+   encode gzip zstd
+   reverse_proxy localhost:$PORT
+   header {
+      Cache-Control public, max-age=31536000
+   }
+}
+" > "$CADDYFILE"
+
+# Formatage du fichier Caddyfile
+caddy fmt --overwrite
+

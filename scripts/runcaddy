@@ -1,4 +1,11 @@
 #!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Run Docker container with Caddy reverse proxy, auto-generating configs. Params: none.""
+        exit 0
+    fi
+done
 caddy stop
 
 # run docker compose and change DIR in docker-compose by current directory

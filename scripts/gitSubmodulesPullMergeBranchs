@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Usage: $0 - Pull and merge all branches in git submodules (params: none)""
+        exit 0
+    fi
+done
+git submodule foreach "gitPullBranchs && gitMergeAll" 

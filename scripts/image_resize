@@ -1,0 +1,9 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Resize all JPG/PNG images in a directory to specified dimensions; params: <width>x<height> (e.g., 800x600), directory (optional, defaults to current).""
+        exit 0
+    fi
+done
+for file in "$arg"/*.{jpg,jpeg,png,JPEG,JPG,PNG}; do convert $file -resize $1 $file; done

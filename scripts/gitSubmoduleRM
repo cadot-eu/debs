@@ -1,0 +1,12 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Remove a Git submodule: provide submodule path as parameter.""
+        exit 0
+    fi
+done
+git submodule deinit $1
+git rm --cached -r $1 -f
+sudo rm .git/modules/$1 -R
+sudo rm -R $1

@@ -1,0 +1,222 @@
+#!/bin/bash
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo ""Initialize a Symfony project with Docker, install dependencies, and configure security; params: none""
+        exit 0
+    fi
+done
+dossier=${PWD##*/}
+
+# Définition des couleurs pour l'affichage
+GREEN="\e[32m"
+RED="\e[31m"
+YELLOW="\e[33m"
+NC="\e[0m" # No Color
+
+
+dc down
+
+#si on a pas de .git on lance git init
+if [ ! -d ".git" ]; then
+    git init
+fi
+
+#on lance le docker-compose
+dc up -d
+
+#on attend que le container soit lancé
+while [ -z "$(docker inspect -f '{{.State.Running}}' "${dossier}")" ]; do
+    sleep 1
+done
+
+# Parcourir et ajouter chaque dépendance
+# Installation des dépendances Symfony
+echo -e "${GREEN}Installation des librairies Symfony...${NC}"
+docker exec -it "${dossier}" composer require \
+symfony/asset-mapper \
+symfony/asset \
+symfony/twig-pack \
+symfony/orm-pack \
+symfony/panther \
+symfony/mailer \
+symfony/ux-turbo \
+symfony/twig-bundle \
+symfony/asset-mapper \
+symfony/asset \
+symfony/twig-pack \
+symfony/monolog-bundle \
+form \
+php-flasher/flasher-symfony \
+symfonycasts/verify-email-bundle \
+liip/imagine-bundle \
+symfony/translation \
+symfonycasts/reset-password-bundle \
+symfony/password-hasher \
+symfony/security-bundle \
+symfony/validator \
+twig/string-extra \
+--no-interaction
+
+# Installation des dépendances Symfony dev
+docker exec -it "${dossier}" composer require --dev \
+symfony/debug-pack \
+symfony/maker-bundle \
+symfony/phpunit-bridge  --no-interaction
+
+docker exec -it "${dossier}" composer global require squizlabs/php_codesniffer --no-interaction
+docker exec -it "${dossier}" composer require --dev doctrine/doctrine-fixtures-bundle -W --no-interaction
+docker exec -it "${dossier}" composer require --dev zenstruck/foundry --no-interaction
+
+#installation de crudmick
+if [ ! -d "src/Command/crudmick" ]; then
+    mkdir -p src/Command
+    git clone git@github.com:cadot-eu/crudmick.git src/Command/crudmick
+fi
+# on attend la fin du git clone
+while [ -z "$(docker inspect -f '{{.State.Running}}' "${dossier}")" ]; do
+    sleep 1
+done
+
+
+
+
+if [ ! -d "src/DataFixtures/ParametresFixtures.php" ]; then
+    mkdir -p src/DataFixtures
+    cp src/Command/crudmick/tpl/ParametresFixtures.incphp src/DataFixtures/ParametresFixtures.php
+    cp src/Command/crudmick/tpl/AdminFixtures.incphp src/DataFixtures/AdminFixtures.php
+fi
+# on demande un email et un mot de passe pour le superadmin
+read -p "Entrez un email pour le superadmin : " email
+read -s -p "Entrez le mot de passe : " password
+#on modifie le fichier src/DataFixtures/AdminFixtures.php
+sed -i "s/EMAIL_A_CHANGER/$email/g" src/DataFixtures/AdminFixtures.php
+sed -i "s/PASSWORD_A_CHANGER/$password/g" src/DataFixtures/AdminFixtures.php
+
+mkdir backup_config
+mv config/packages/security.yaml  backup_config/.
+cp src/Command/crudmick/tpl/security.yaml config/packages/security.yaml
+cp src/Command/crudmick/tpl/Parametres.incphp src/Entity/Parametres.php
+cp src/Command/crudmick/tpl/ParametresRepository.incphp src/Repository/ParametresRepository.php
+
+if [ ! -d "src/Controller/SecurityController.php" ]; then
+    mv src/Controller/SecurityController.php backup_config/.
+fi
+cp src/Command/crudmick/tpl/SecurityController.incphp src/Controller/SecurityController.php
+
+cp src/Command/crudmick/tpl/ResetPasswordController.incphp src/Controller/ResetPasswordController.php
+cp src/Command/crudmick/tpl/User.incphp src/Entity/User.php
+cp src/Command/crudmick/tpl/ResetPasswordRequest.incphp src/Entity/ResetPasswordRequest.php
+cp src/Command/crudmick/tpl/UserRepository.incphp src/Repository/UserRepository.php
+
+if [ ! -d "templates/security" ]; then
+    mkdir -p templates/security
+fi
+cp src/Command/crudmick/tpl/login.html.twig templates/security/login.html.twig
+
+cp src/Command/crudmick/tpl/liip_imagine.yaml config/packages/liip_imagine.yaml
+
+mv config/packages/monolog.yaml backup_config/monolog.yaml
+cp src/Command/crudmick/tpl/monolog.yaml config/packages/monolog.yaml
+
+# on configure liip imagine
+echo -e "${GREEN}Configuration de liip imagine{NC}"
+cat > "config/routes/liip_imagine.yaml" <<EOF
+_liip_imagine:
+    resource: "@LiipImagineBundle/Resources/config/routing.yaml"
+EOF
+
+#ajout de Liip\ImagineBundle\LiipImagineBundle::class => ['all' => true],
+echo -e "${GREEN}Ajout du bundle liip...${NC}"
+sed -i "s/];/Liip\\\ImagineBundle\\\LiipImagineBundle::class => ['all' => true],];/g" config/bundles.php
+
+#on ajoute à la fin de config/services.yaml
+if ! grep -q "app.filter.all_filter:" config/services.yaml; then
+cat << EOF >> config/services.yaml
+    app.filter.all_filter:
+        class: App\Imagine\Filter\Loader\AllImagineFilter
+        tags:
+            - { name: "liip_imagine.filter.loader", loader: "allfilter" }
+    Liip\ImagineBundle\Service\FilterService:
+        alias: "liip_imagine.service.filter"
+
+EOF
+fi
+
+# Chemin vers le fichier .gitmodules
+GITMODULES_FILE=".gitmodules"
+
+# Liste des sous-modules à ajouter
+declare -A submodules=(
+    ["src/Controller/base"]="git@github.com:cadot-eu/basecontroller.git"
+    ["src/Command/base"]="git@github.com:cadot-eu/basecommand.git"
+    ["src/EventSubscriber/base"]="git@github.com:cadot-eu/basesubscriber.git"
+    ["src/Imagine"]="git@github.com:cadot-eu/baseimagine.git"
+    ["src/Service/base"]="git@github.com:cadot-eu/baseservice.git"
+    ["src/Twig/base"]="git@github.com:cadot-eu/basetwig.git"
+    ["src/Entity/base"]="git@github.com:cadot-eu/basetraits.git"
+    ["src/EventListener/base"]="git@github.com:cadot-eu/baselisteners.git"
+    ["templates/base"]="git@github.com:cadot-eu/basetemplate.git"
+    ["tests/basetests"]="git@github.com:cadot-eu/basetests.git"
+    ["basetools"]="git@github.com:cadot-eu/basetools.git"
+    ["src/Repository/base"]="git@github.com:cadot-eu/baseRepository.git"
+    ["src/Security"]="git@github.com:cadot-eu/basesecurity.git"
+    ["assets/js"]="git@github.com:cadot-eu/basejs.git"
+    ["assets/controllers/base"]="git@github.com:cadot-eu/basestimulus.git"
+)
+
+# on ajoute au début du fichier assets/app.css bootstrap icons
+if ! grep -q "bootstrap-icons" assets/styles/app.css; then
+    sed -i '1s|^|@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");\n|' assets/styles/app.css
+fi
+
+# on ajoute bootstrap dans app.js juste avant import './styles/app.css';
+if ! grep -q "bootstrap.min.css" assets/app.js; then
+    sed -i "s|import './styles/app.css';|import 'bootstrap/dist/css/bootstrap.min.css';\nimport 'bootstrap';\nimport './styles/app.css';|" assets/app.js
+fi
+
+# Fonction pour ajouter un sous-module
+add_submodule() {
+    local path="$1"
+    local url="$2"
+    
+    # Vérifier si le sous-module existe déjà dans .gitmodules
+    if git config -f "$GITMODULES_FILE" --get-regexp "^submodule\..*\.path$" | grep -q "$path"; then
+        echo "Le sous-module '$path' existe déjà dans .gitmodules."
+    else
+        # Ajouter le sous-module
+        git submodule add -b main "$url" "$path"
+        git config -f "$GITMODULES_FILE" "submodule.$path.active" true
+    fi
+}
+
+# Parcourir et ajouter chaque sous-module
+for path in "${!submodules[@]}"; do
+    if [ -d "$path" ]; then
+        echo "Le sous-module '$path' existe deja."
+    else
+        echo "Ajout du sous-module '$path'..."
+        url="${submodules[$path]}"
+        add_submodule "$path" "$url"
+    fi
+done
+
+# Initialiser et mettre à jour les sous-modules
+git submodule update --init --recursive
+
+docker exec -it "${dossier}" php bin/console d:s:u --force
+
+docker exec -it "${dossier}" php bin/console importmap:require bootstrap stimulus-use leaflet sweetalert2 imask bigpicture sortable notyf swiper swiper/swiper.css
+if [ ! -d "templates/admin" ]; then
+    docker exec -it "${dossier}" mkdir templates/admin
+fi
+docker exec -it "${dossier}" cp templates/base.html.twig templates/admin/.
+docker exec -it "${dossier}" php bin/console d:f:l -n
+if [ ! -d "src/Controller/UserController.php" ]; then
+    docker exec -it "${dossier}" php bin/console crud:gen:con user
+fi
+docker exec -it "${dossier}" php bin/console crud
+
+# On informe qu'il faut créer le repoistory dans github
+echo -e "${GREEN}Installation finie, créer le repistory github et l'ajouter manuellement{NC}"
+echo -e "${GREEN}Il faudra modifier la database dans .env et prendre la bonne image en conséquence{NC}"

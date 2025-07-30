@@ -1,4 +1,10 @@
 #!/bin/bash
-if [[ "$1" == "-h" ]]; then echo "Affiche l'état du dépôt Git et de ses sous-modules."; exit 0; fi
+# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Check Git and submodule statuses. Parameters: none."
+        exit 0
+    fi
+done
 git status
 git submodule foreach git status
