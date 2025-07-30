@@ -1,6 +1,0 @@
-#si /usr/bin/ccze n'existe pas on l'install
-if [ ! -f /usr/bin/ccze ]; then
-    sudo apt install ccze
-fi
-sudo chmod +x *
-sudo cp * /usr/bin/.

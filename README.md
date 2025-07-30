@@ -1,3 +1,29 @@
+# Organisation des scripts
+
+Tous les scripts (sauf `dlogs` et `gcp`) sont désormais dans le dossier `scripts/` à la racine du projet.
+
+## Logique de nommage
+
+- Scripts renommés en anglais, en kebab-case (ex: `list-big-dirs`, `exportbd.sh`).
+- Les scripts shell gardent l'extension `.sh`.
+- Les scripts non shell sont aussi renommés pour plus de clarté.
+- Les scripts `dlogs` et `gcp` restent à la racine pour compatibilité.
+
+Pour installer tous les scripts dans votre PATH utilisateur :
+
+```bash
+cd scripts
+./install.sh
+```
+
+Pour désinstaller :
+
+```bash
+cd scripts
+./uninstall.sh
+```
+
+Par défaut, l'installation se fait dans `~/bin-personnel` (modifiable en argument).
 
 # Scripts disponibles
 

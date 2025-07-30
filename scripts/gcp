@@ -14,9 +14,10 @@ function show_usage (){
 
 
 
+
 force=0
 passtest=0
-
+message=""
 
 # Charger .env.local uniquement depuis ~/debs ou ~/git/debs (jamais local)
 if [ -f "$HOME/debs/.env.local" ]; then
@@ -25,28 +26,41 @@ if [ -f "$HOME/debs/.env.local" ]; then
     export $(grep -v '^#' "$HOME/git/debs/.env.local" | xargs)
 fi
 
-message="$1"
-
-#test option force is set
-
-for i in "$@"
-do
-    case $i in
-        --force| -f)
+# Parsing des options et récupération du message (premier argument non-option)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --force|-f)
             force=1
             shift
         ;;
-        --passtest| -p)
+        --passtest|-p)
             passtest=1
             shift
         ;;
-        --help| -h)
+        --help|-h)
             show_usage
             exit 0
         ;;
+        --)
+            shift
+            break
+        ;;
+        -*)
+            # Option inconnue, ignorer
+            shift
+        ;;
+        *)
+            # Premier argument non-option = message
+            message="$1"
+            shift
+            break
+        ;;
     esac
-    shift
 done
+# Si d'autres arguments après, les ignorer (ou les concaténer si tu veux gérer un message sur plusieurs mots)
+if [[ $# -gt 0 && -z "$message" ]]; then
+    message="$*"
+fi
 
 if [ ! -d "tests" ]; then
     passtest=1
@@ -96,7 +110,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
             fi
             echo "Génération du commit par Deepseek..."
             # Prompt pour Deepseek (format JSON, découpe title/body, sans intro ni explication)
-PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement et strictement un message de commit git professionnel au format JSON. Réponds exclusivement par l'objet JSON, sans aucune phrase d'introduction, sans analyse, sans explication, sans préambule, sans balise, sans bloc de code, sans texte avant ou après, sans retour à la ligne avant ou après, sans rien d'autre que l'objet JSON. N'inclus surtout pas de balises \`\`\`json ni aucun texte supplémentaire.\n\nFormat attendu : {\"title\": \"feat: courte description\", \"body\": \"explication optionnelle sur plusieurs lignes\"}\n\nExemples : {\"title\": \"feat: ajoute la gestion des utilisateurs\", \"body\": \"Ajout du CRUD utilisateur et des tests associés\"}\n{\"title\": \"fix: corrige le bug d'affichage du menu\", \"body\": \"Correction du CSS pour le menu déroulant\"}\n\nLe champ 'title' doit être court, affirmatif, descriptif, et formaté comme un vrai message de commit. Le champ 'body' est optionnel. La réponse doit être strictement l'objet JSON, rien d'autre."
+            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement et strictement un message de commit git professionnel au format JSON. Réponds exclusivement par l'objet JSON, sans aucune phrase d'introduction, sans analyse, sans explication, sans préambule, sans balise, sans bloc de code, sans texte avant ou après, sans retour à la ligne avant ou après, sans rien d'autre que l'objet JSON. N'inclus surtout pas de balises \`\`\`json ni aucun texte supplémentaire.\n\nFormat attendu : {\"title\": \"feat: courte description\", \"body\": \"explication optionnelle sur plusieurs lignes\"}\n\nExemples : {\"title\": \"feat: ajoute la gestion des utilisateurs\", \"body\": \"Ajout du CRUD utilisateur et des tests associés\"}\n{\"title\": \"fix: corrige le bug d'affichage du menu\", \"body\": \"Correction du CSS pour le menu déroulant\"}\n\nLe champ 'title' doit être court, affirmatif, descriptif, et formaté comme un vrai message de commit. Le champ 'body' est optionnel. La réponse doit être strictement l'objet JSON, rien d'autre."
             # Utiliser un fichier temporaire pour éviter la limite d'arguments
             TMP_PROMPT=$(mktemp)
             echo -n "$PROMPT" > "$TMP_PROMPT"
@@ -116,16 +130,8 @@ PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement et stric
                 -H "Authorization: Bearer $DEEPSEEK" \
             --data-binary "@${TMP_JSON}" | jq -r '.choices[0].message.content')
             rm -f "$TMP_JSON"
-            # Extraire le premier objet JSON valide de la réponse, même si du texte précède ou suit
-            json_commit=$(echo "$raw_response" | awk 'BEGIN{c=0} {for(i=1;i<=length;i++){ch=substr($0,i,1);if(ch=="{"){if(c==0)start=i;c++}if(ch=="}"){c--;if(c==0){print substr($0,start,i-start+1);exit}}}}')
-            if [ -z "$json_commit" ]; then
-                echo "Réponse non exploitable de Deepseek :"
-                echo "$raw_response"
-                exit 1
-            fi
-            # Nettoyer les espaces et retours à la ligne
-            json_commit=$(echo "$json_commit" | tr -d '\r' | tr -d '\n')
-            # Extraire title et body
+            # Nettoyer les balises ``` et ```json éventuelles de la réponse Deepseek
+            json_commit=$(echo "$raw_response" | tr -d '\r' | tr -d '\n' | sed -E 's/^```json//;s/^```//;s/```$//;s/```//g')
             commit_title=$(echo "$json_commit" | jq -r '.title')
             commit_body=$(echo "$json_commit" | jq -r '.body')
             if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
