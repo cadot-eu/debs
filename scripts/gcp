@@ -69,8 +69,6 @@ while [[ $# -gt 0 ]]; do
             # Premier argument non-option = message
             message="$1"
             shift
-            break
-        ;;
     esac
 done
 # Si d'autres arguments après, les ignorer (ou les concaténer si tu veux gérer un message sur plusieurs mots)
