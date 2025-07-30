@@ -48,16 +48,12 @@ for script in "$SCRIPTS_DIR"/*; do
     || grep -qE 'if +\[\[? +"?\$[a-zA-Z0-9_]+"? +([=]{1,2}) +(-h|--help)' "$script"; then
         # Récupère l'aide du script avec timeout pour éviter les blocages
         helpout=$(timeout 2s bash "$script" -h 2>/dev/null | head -n 10)
-        desc=$(echo "$helpout" | grep -m1 -v Usage | grep -v Exemple | head -n1 | sed 's/^ *//')
-        usage=$(echo "$helpout" | grep -m1 Usage | sed 's/^ *//')
-        exemple=$(echo "$helpout" | grep -m1 Exemple | sed 's/^ *//')
-        [ -z "$desc" ] && desc="-"
-        [ -z "$usage" ] && usage="-"
-        [ -z "$exemple" ] && exemple="-"
-        desc_usage_exemple="$desc"
-        [ "$usage" != "-" ] && desc_usage_exemple="$desc_usage_exemple | $usage"
-        [ "$exemple" != "-" ] && desc_usage_exemple="$desc_usage_exemple | $exemple"
-        echo "| $name | $desc_usage_exemple |" >> "$README"
+        # Nettoie les éventuels " et espaces en début/fin
+        helpout=$(echo "$helpout" | sed 's/^"//;s/"$//;s/^ *//;s/ *$//')
+        # Remplace les retours à la ligne par <br> pour le markdown
+        helpout_md=$(echo "$helpout" | sed ':a;N;$!ba;s/\n/<br>/g')
+        [ -z "$helpout_md" ] && helpout_md="-"
+        echo "| $name | $helpout_md |" >> "$README"
     else
         echo "[WARN] $name ne gère pas l'option -h" 1>&2
         echo "| $name | - |" >> "$README"
