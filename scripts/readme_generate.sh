@@ -11,7 +11,10 @@ cat > "$README" <<EOF
 |--------|-------------|-------|---------|
 EOF
 
-for script in "$SCRIPTS_DIR"/*.sh; do
+for script in "$SCRIPTS_DIR"/*; do
+    # Ignore ce script lui-même et les fichiers non exécutables
+    [ "$script" = "$SCRIPTS_DIR/readme_generate.sh" ] && continue
+    [ ! -x "$script" ] && continue
     name="$(basename "$script")"
     # Récupère l'aide du script avec timeout pour éviter les blocages
     helpout=$(timeout 2s bash "$script" -h 2>/dev/null | head -n 10)
