@@ -80,24 +80,57 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ] ; then
                 echo "Aucune modification détectée."
                 exit 1
             fi
+            # Si beaucoup de suppressions/déplacements, ne donner que le nom du dossier
+            SUPPR_COUNT=$(echo "$DIFF" | grep -E '^delete mode|^rename ' | wc -l)
+            if [ "$SUPPR_COUNT" -gt 10 ]; then
+                DIRNAME=$(basename "$PWD")
+                echo "[AVERTISSEMENT] Beaucoup de suppressions/déplacements détectées ($SUPPR_COUNT). Seul le nom du dossier sera envoyé à Deepseek."
+                DIFF="Suppression ou déplacement massif dans le répertoire : $DIRNAME"
+            else
+                # Tronquer le diff si trop volumineux
+                MAX_DIFF=20000
+                if [ ${#DIFF} -gt $MAX_DIFF ]; then
+                    echo "[AVERTISSEMENT] Le diff est trop volumineux, il sera tronqué à $MAX_DIFF caractères pour Deepseek."
+                    DIFF="${DIFF:0:$MAX_DIFF}\n[...diff tronqué...]"
+                fi
+            fi
             echo "Génération du commit par Deepseek..."
             # Prompt pour Deepseek (format JSON, découpe title/body, sans intro ni explication)
-            PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement un message de commit git professionnel au format JSON, sans aucune phrase d'introduction, sans explication, sans préambule, sans guillemets autour de la réponse, sans retour à la ligne avant ou après, et sans rien d'autre que l'objet JSON.\n\nFormat attendu : {\"title\": \"feat: courte description\", \"body\": \"explication optionnelle sur plusieurs lignes\"}\n\nExemples : {\"title\": \"feat: ajoute la gestion des utilisateurs\", \"body\": \"Ajout du CRUD utilisateur et des tests associés\"}\n{\"title\": \"fix: corrige le bug d'affichage du menu\", \"body\": \"Correction du CSS pour le menu déroulant\"}\n\nLe champ 'title' doit être court, descriptif, et formaté comme un vrai message de commit. Le champ 'body' est optionnel. La réponse doit être strictement l'objet JSON, rien d'autre."
-            # Utiliser jq pour encoder le prompt correctement
-            JSON_DATA=$(jq -n --arg prompt "$PROMPT" '{model: "deepseek-chat", messages: [{role: "user", content: $prompt}], max_tokens: 200}')
+PROMPT="Voici le diff des modifications :\n$DIFF\n\nGénère uniquement et strictement un message de commit git professionnel au format JSON. Réponds exclusivement par l'objet JSON, sans aucune phrase d'introduction, sans analyse, sans explication, sans préambule, sans balise, sans bloc de code, sans texte avant ou après, sans retour à la ligne avant ou après, sans rien d'autre que l'objet JSON. N'inclus surtout pas de balises \`\`\`json ni aucun texte supplémentaire.\n\nFormat attendu : {\"title\": \"feat: courte description\", \"body\": \"explication optionnelle sur plusieurs lignes\"}\n\nExemples : {\"title\": \"feat: ajoute la gestion des utilisateurs\", \"body\": \"Ajout du CRUD utilisateur et des tests associés\"}\n{\"title\": \"fix: corrige le bug d'affichage du menu\", \"body\": \"Correction du CSS pour le menu déroulant\"}\n\nLe champ 'title' doit être court, affirmatif, descriptif, et formaté comme un vrai message de commit. Le champ 'body' est optionnel. La réponse doit être strictement l'objet JSON, rien d'autre."
+            # Utiliser un fichier temporaire pour éviter la limite d'arguments
+            TMP_PROMPT=$(mktemp)
+            echo -n "$PROMPT" > "$TMP_PROMPT"
+            TMP_JSON=$(mktemp)
+            # Générer le JSON manuellement pour éviter la limite d'arguments
+            printf '{"model": "deepseek-chat", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
+            jq -Rs . < "$TMP_PROMPT" >> "$TMP_JSON"
+            printf '}]}' >> "$TMP_JSON"
+            rm -f "$TMP_PROMPT"
+            if [ ! -s "$TMP_JSON" ]; then
+                echo "Erreur lors de la préparation du prompt pour Deepseek (json)."
+                rm -f "$TMP_JSON"
+                exit 1
+            fi
             raw_response=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $DEEPSEEK" \
-            -d "$JSON_DATA" | jq -r '.choices[0].message.content')
-            # Extraire la première accolade ouvrante et la dernière fermante pour ne garder que l'objet JSON
-            json_commit=$(echo "$raw_response" | awk 'BEGIN{found=0} /\{/ {found=1} {if(found) print} /\}/ {if(found) exit}')
+            --data-binary "@${TMP_JSON}" | jq -r '.choices[0].message.content')
+            rm -f "$TMP_JSON"
+            # Extraire le premier objet JSON valide de la réponse, même si du texte précède ou suit
+            json_commit=$(echo "$raw_response" | awk 'BEGIN{c=0} {for(i=1;i<=length;i++){ch=substr($0,i,1);if(ch=="{"){if(c==0)start=i;c++}if(ch=="}"){c--;if(c==0){print substr($0,start,i-start+1);exit}}}}')
+            if [ -z "$json_commit" ]; then
+                echo "Réponse non exploitable de Deepseek :"
+                echo "$raw_response"
+                exit 1
+            fi
             # Nettoyer les espaces et retours à la ligne
             json_commit=$(echo "$json_commit" | tr -d '\r' | tr -d '\n')
             # Extraire title et body
             commit_title=$(echo "$json_commit" | jq -r '.title')
             commit_body=$(echo "$json_commit" | jq -r '.body')
             if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
-                echo "Erreur lors de la génération du message de commit avec Deepseek."
+                echo "Erreur lors de la génération du message de commit avec Deepseek. Réponse brute :"
+                echo "$raw_response"
                 exit 1
             fi
             echo "Message de commit généré : $commit_title"
