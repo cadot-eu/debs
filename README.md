@@ -3,7 +3,7 @@
 | Script | Description & Usage | Exemple |
 |--------|--------------------|---------|
 |--------|--------------------|---------|
-| 404_count_in_logs | - | "Counts and lists 404 error URLs from log files in a directory. Usage: ./404_count_in_logs /path/to/logs" | - |
+| 404_count_in_logs | - | "Counts and lists 404 error URLs from log files in a directory. Usage: /home/michael/bin/404_count_in_logs /path/to/logs" | - |
 | alexa_maj_local | "Fetch Alexa skill files (interaction model and manifest) using the skill ID from .ask/ask-states.json." Parameters: none. | - |
 | alexa_push | - | "Usage: [-h] [commit_message] - stages, commits, and pushes changes, then deploys with ask" | - |
 | backup | "Backup script using duplicity (params: full, local, or none for incremental)" | - |
@@ -16,7 +16,7 @@
 | crudmickAdd | "Initialize a Symfony project with Docker, install dependencies, and configure security; params: none" | - |
 | dbash | - | "Usage: dbash" [-h] [container_name] [shell_path] - Attach to a Docker container's shell (default: current directory name as container, /bin/bash as shell)." | - |
 | dbashs | - | "Usage: dbashs" [container-name] [shell-type] - Exec into a PHP container's shell (default: current dir name and bash)." | - |
-| dc | - | "Usage: ./dc [-h] [docker-compose-args] - Wrapper for 'docker compose' with same parameters." | - |
+| dc | - | "Usage: /home/michael/bin/dc [-h] [docker-compose-args] - Wrapper for 'docker compose' with same parameters." | - |
 | dcup | "Start Docker Compose services in detached mode, automatically detecting compose files (supports docker-compose.yml, .yaml, override.*, local.*)." Parameters: none. | - |
 | deepseek-help-adder | "Automatically adds/updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]" | - |
 | desactiver_paste_molette_souris | "Install gnome-tweak-tool: [-h|--help] (show help)" | - |
@@ -30,16 +30,16 @@
 | exportBd | "Backup PostgreSQL database and uploads folder with parameters: [CONTAINER_NAME DB_NAME PG_USER PG_PASSWORD TIMESTAMP DEST_DIR SITE_DIR] or interactive prompts." | - |
 | fast | "Set CPU governor to performance mode for cores 0-7." Parameters: none. | - |
 | files_clean | "Clean filenames by replacing special characters in a directory [directory] (-h for help)" | - |
-| gac | - | "Usage: ./gac <file> <message> - Stage and commit a file with the given message." [options: -h, --help] | - |
-| gacp | - | "Usage: ./gacp [-h] <file> <message> - Stages, commits, and pushes changes to Git." | - |
-| gall | - | "Usage: ./gall [-h] <commit_message> - Stage and commit all changes with the given message." | - |
+| gac | - | "Usage: /home/michael/bin/gac <file> <message> - Stage and commit a file with the given message." [options: -h, --help] | - |
+| gacp | - | "Usage: /home/michael/bin/gacp [-h] <file> <message> - Stages, commits, and pushes changes to Git." | - |
+| gall | - | "Usage: /home/michael/bin/gall [-h] <commit_message> - Stage and commit all changes with the given message." | - |
 | gc | "Commit changes with optional test bypass (-p|--passtest) or help (-h|--help)." | - |
-| gcp | "Automated git workflow with tests, auto-commit messages via Deepseek, and pushes - options: [-f|--force] [-p|--passtest] [-h|--help]" | - |
+| gcp | Automated git workflow with tests, auto-commit messages via Deepseek, and pushes - options: [-f|--force] [-p|--passtest] [-h|--help] | - |
 | gitConfigSSHKey | "Configure Git to use a specific SSH key for the current repository; no parameters." | - |
 | gitMergeAll | "Merge all local and remote branches into main, then delete them (-h for help)" [parameters: none] | - |
 | git_news.json | "Display git commit history with subjects and dates; parameters: -h (help), --force, --help" | - |
 | git_permissions_repair | - | "Usage: git_permissions_repair" [-h] - Reset .git ownership and permissions to current user (755)." | - |
-| gitPullBranchs | - | "Usage: ./gitPullBranchs [-h] - Fetches all remote branches and tracks them locally, then pulls all updates." | - |
+| gitPullBranchs | - | "Usage: /home/michael/bin/gitPullBranchs [-h] - Fetches all remote branches and tracks them locally, then pulls all updates." | - |
 | gitpullRmModifs | Reset local changes, clean untracked files, and pull latest changes. Parameters: [-h|--help] | - |
 | gitResetAndClean | "Reset and clean Git repository: [-h]" | - |
 | gitRmBranch | "Delete a Git branch locally and remotely. Parameters: <branch_name>" | - |
@@ -48,8 +48,8 @@
 | gitSubmodulesInit | "Initialize and update git submodules recursively (-h for help). Parameters: none." | - |
 | gitSubmodulesInstallFrom.gitmodules | "Remove and re-add all git submodules, with optional forced removal using 'gitSubmoduleRM'." Parameters: none. | - |
 | gitSubmodulesMergeBranchs | "Fetch, track all remote branches, pull updates, and merge all branches in each submodule. Parameters: none." | - |
-| gitSubmodulesOnMain | - | "Usage: ./gitSubmodulesOnMain [-h|--help] - Checkout main branch in all Git submodules" | - |
-| gitSubmodulesPullMergeBranchs | - | "Usage: ./gitSubmodulesPullMergeBranchs - Pull and merge all branches in git submodules (params: none)" | - |
+| gitSubmodulesOnMain | - | "Usage: /home/michael/bin/gitSubmodulesOnMain [-h|--help] - Checkout main branch in all Git submodules" | - |
+| gitSubmodulesPullMergeBranchs | - | "Usage: /home/michael/bin/gitSubmodulesPullMergeBranchs - Pull and merge all branches in git submodules (params: none)" | - |
 | gitSubmodulesUpdate | "Update git submodules to their latest main branch versions. Parameters: none." | - |
 | gop | "Force push Git changes, optionally skipping tests (-f|--force, -p|--passtest, -h|--help)" | - |
 | gs | "Check Git and submodule statuses. Parameters: none." | - |
@@ -67,7 +67,7 @@
 | pdfToEpub | "Convert an ebook to EPUB format with heuristics, justified text, and no cover. Parameters: <input_file>" | - |
 | playlist-create | "Generate an M3U playlist from audio files in a directory. Parameters: [directory] (default: current directory)" | - |
 | port_application_used | - | "Usage: port_application_used" [-h] <port> - List processes listening on specified port." | - |
-| removeCrud | - | "Remove Symfony CRUD files for specified entity - Usage: ./removeCrud <EntityName> [-h|--help]" | - |
+| removeCrud | - | "Remove Symfony CRUD files for specified entity - Usage: /home/michael/bin/removeCrud <EntityName> [-h|--help]" | - |
 | restore | "Restore backups using duplicity: full, file [path], or list; requires BACKUP_URL in .env." [full|file [path]|list] | - |
 | rotate-screen | "Rotate screen and input devices between normal/left/inverted/right orientations. Options: -h, --help" | - |
 | runC | "Adds current directory as a service to compose.yaml and creates Caddyfile; params: -h, --help" | - |
@@ -85,7 +85,7 @@
 | UDP_buffer_set | - | "Usage: UDP_buffer_set" [-h|--help] - Adjusts kernel network buffer sizes (rmem_max/wmem_max=7500000)." | - |
 | Ultimaker-Cura | "Launch Ultimaker Cura 5.2.1 with NVIDIA PRIME render offload support. Parameters: [AppImage options]." | - |
 | uneheure | - | "Usage: uneheure" [-h|--help] - Plays beeps for 1 hour; requires 'beep' and pcspkr module." | - |
-| vpn_off | - | "Usage: ./vpn_off [-h|--help] - Bring down the WireGuard interface defined in ~/pcmick.conf" | - |
+| vpn_off | - | "Usage: /home/michael/bin/vpn_off [-h|--help] - Bring down the WireGuard interface defined in ~/pcmick.conf" | - |
 | vpn_on | "Restarts WireGuard VPN, updates routing, and tests connectivity. Parameters: none." | - |
 | wget | "Download a file with resuming support, optional speed limit (default: 300k), and insecure SSL; params: URL [speed]" | - |
 | wgetn | "Download a file using wget with resume support (-c) and content-disposition, takes a single URL parameter." Parameters: <URL> | - |
