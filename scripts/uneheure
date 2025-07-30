@@ -1,3 +1,4 @@
+#!/bin/bash
 #/etc/modprobe.d/blacklist.con change #blacklist pcspkr to blacklist pcspkr
 #or sudo modprobe pcspkr
 sleep 1h

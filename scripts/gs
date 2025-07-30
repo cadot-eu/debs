@@ -1,2 +1,4 @@
+#!/bin/bash
+if [[ "$1" == "-h" ]]; then echo "Affiche l'état du dépôt Git et de ses sous-modules."; exit 0; fi
 git status
 git submodule foreach git status

@@ -1,4 +1,5 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo ""Usage: $0 [-f|--force] [-p|--passtest] [-h|--help]""; exit 0; fi
 
 function show_usage (){
     printf "Usage: $0 [options ]\n"

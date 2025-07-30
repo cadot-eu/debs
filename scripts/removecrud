@@ -1,4 +1,5 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo ""Remove Symfony CRUD files for specified entity - Usage: $0 <EntityName>""; exit 0; fi
 
 # Check if entity name is provided
 if [ $# -eq 0 ]; then

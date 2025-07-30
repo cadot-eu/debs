@@ -1,4 +1,6 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo "Affiche les logs d'un conteneur Docker (paramètre: NOM_CONTENEUR, optionnel, défaut: nom du répertoire courant)."; exit 0; fi
+
 # Variables par défaut
 nombre_de_logs=10
 nom_du_docker=""

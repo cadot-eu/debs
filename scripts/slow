@@ -1,3 +1,4 @@
+#!/bin/bash
 for i in {0..7};
 do sudo cpufreq-set -c $i -g powersave;
 done;

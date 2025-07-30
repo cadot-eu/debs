@@ -1,3 +1,4 @@
+#!/bin/bash
 #connect at server by parameter in .env
 #SERVER_CONNECT=user@ip or name
 #SERVER_DIR=/home/.../...

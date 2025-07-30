@@ -1,3 +1,4 @@
+#!/bin/bash
 # run docker compose and change DIR in docker-compose by current directory
 result=${PWD##*/}
 if [ ! -f docker-compose.yml ]

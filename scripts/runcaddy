@@ -1,3 +1,4 @@
+#!/bin/bash
 caddy stop
 
 # run docker compose and change DIR in docker-compose by current directory

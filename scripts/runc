@@ -1,4 +1,5 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo ""Adds current directory as a service to compose.yaml with random port and creates Caddyfile. Params: none.""; exit 0; fi
 set -e
 
 # Nom du répertoire actuel

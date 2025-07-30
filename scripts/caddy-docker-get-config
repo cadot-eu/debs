@@ -1,1 +1,11 @@
-docker exec -it caddy cat config/caddy/Caddyfile.autosave
+#!/bin/bash
+if [[ "$1" == "-h" ]]; then
+    echo "Description : Script $0 (ajoutez une description ici)"
+    echo "Usage : $0 [options]"
+    echo "Exemple : $0"
+    exit 0
+fi
+git submodule deinit $1
+git rm --cached -r $1 -f
+sudo rm .git/modules/$1 -R
+sudo rm -R $1

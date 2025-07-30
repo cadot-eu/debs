@@ -1,4 +1,5 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo "Generate an M3U playlist from audio files in a directory. Parameters: [directory] (default: current directory)."; exit 0; fi
 
 # Définir le répertoire à traiter
 # Si aucun répertoire n'est spécifié en argument, utiliser le répertoire courant (".")

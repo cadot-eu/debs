@@ -1,3 +1,4 @@
+#!/bin/bash
 # Optimiser les fichiers PNG, GIF, TIFF, et BMP avec optipng
 find . -type f \( -iname "*.png" -o -iname "*.PNG" -o -iname "*.gif" -o -iname "*.GIF" -o -iname "*.tif" -o -iname "*.TIF" -o -iname "*.tiff" -o -iname "*.TIFF" -o -iname "*.bmp" -o -iname "*.BMP" \) -exec optipng {} \;
 

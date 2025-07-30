@@ -1,3 +1,10 @@
+#!/bin/bash
+if [[ "$1" == "-h" ]]; then
+  echo "Description : Script $0 (ajoutez une description ici)"
+  echo "Usage : $0 [options]"
+  echo "Exemple : $0"
+  exit 0
+fi
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo -e "\nRestaure une sauvegarde duplicity."
     echo "Usage: restore [full|file|list] [fichier]"

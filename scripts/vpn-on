@@ -1,3 +1,4 @@
+#!/bin/bash
 sudo wg-quick down ~/pcmick.conf
 sudo wg-quick up ~/pcmick.conf
 sudo ip route del 10.8.0.0/24 dev pcmick

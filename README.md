@@ -2,8 +2,93 @@
 
 | Script | Description | Usage | Exemple |
 |--------|-------------|-------|---------|
-| 404-count-in-logs | Erreur : le dossier spécifié n'existe pas. | - | - |
-| alexa-maj-local | Erreur : Le fichier ./.ask/ask-states.json n'existe pas. Assurez-vous que le projet est configuré avec ask-cli. | - | - |
-| alexa-push | Sur la branche master | - | - |
-| backup | parameters empty in .env, get BACKUP_URL | - | - |
+| 404-count-in-logs | - | - | - |
+| alexa-maj-local | - | - | - |
+| alexa-push | - | - | - |
+| backup | - | - | - |
 | caddy-docker-get-config | - | - | - |
+| caddyerrorbind | - | - | - |
+| catlog | - | - | - |
+| copytousbreal | - | - | - |
+| createsite.save | - | - | - |
+| crudmickadd | - | - | - |
+| dbash | - | - | - |
+| dbashs | - | - | - |
+| dc | - | - | - |
+| dcup | - | - | - |
+| desactiver-paste-molette-souris | - | - | - |
+| dkill | - | - | - |
+| dkillall | - | - | - |
+| dlogs | - | - | - |
+| dns-refresh | - | - | - |
+| docker-clean-inused-unmonted | - | - | - |
+| dsh | - | - | - |
+| duu | - | - | - |
+| exportbd.sh | - | - | - |
+| fast | - | - | - |
+| files-clean | - | - | - |
+| gac | - | - | - |
+| gacp | - | - | - |
+| gall | - | - | - |
+| gc | - | Usage: restore [full|file|list] [fichier] | Exemple: restore file monfichier.txt |
+| gcp | - | Usage: restore [full|file|list] [fichier] | Exemple: restore file monfichier.txt |
+| gitconfigsshkey | - | - | - |
+| gitmergeall | - | - | - |
+| git-news.json | - | - | - |
+| git-permissions-repair | - | - | - |
+| gitpullbranchs | - | - | - |
+| gitpullrmmodifs | - | - | - |
+| gitresetandclean | - | - | - |
+| gitrmbranch | - | - | - |
+| gitsubmodulerm | - | - | - |
+| gitsubmodulesconfigmerge | - | - | - |
+| gitsubmodulesinit | - | - | - |
+| gitsubmodulesinstallfrom.gitmodules | - | - | - |
+| gitsubmodulesmergebranchs | - | - | - |
+| gitsubmodulesonmain | - | - | - |
+| gitsubmodulespullmergebranchs | - | - | - |
+| gitsubmodulesupdate | - | - | - |
+| gop | - | Usage: ./gop [options ] | - |
+| gs | - | - | - |
+| hosts-pub-install.sh | - | - | - |
+| hosts-pub-update.sh | - | - | - |
+| image-compress | - | - | - |
+| image-resize | - | - | - |
+| importbd.sh | - | - | - |
+| lib.sh | - | - | - |
+| list-big-dirs | - | - | - |
+| list-big-files | - | - | - |
+| machines | - | - | - |
+| mouse-remove-paste-by-middle-button | - | - | - |
+| nbr-fichiers.sh | - | - | - |
+| nextcloud-list-conflits | - | - | - |
+| nextcloud-rm-conflits | - | - | - |
+| pdftoepub | - | - | - |
+| playlist-create | - | - | - |
+| port-application-used | - | - | - |
+| readme-generate | - | - | - |
+| removecrud | - | - | - |
+| restore | - | - | - |
+| rotate-screen | - | - | - |
+| runc | - | - | - |
+| runcaddy | - | - | - |
+| runphp | - | - | - |
+| runsite | - | - | - |
+| server-http-from-curent-dir | - | - | - |
+| server-run-command | - | - | - |
+| server-update-yarn-composer | - | - | - |
+| slow | - | - | - |
+| suspend.sh | - | - | - |
+| svgs-to-pngs | - | - | - |
+| symfony-create-project | - | - | - |
+| ttl | - | - | - |
+| udp-buffer-set | - | - | - |
+| ultimaker-cura.sh | - | - | - |
+| uneheure | - | - | - |
+| vpn-off | - | - | - |
+| vpn-on | - | - | - |
+| wgetn | - | - | - |
+| wget.sh | - | - | - |
+| xubuntu-conf-power | - | - | - |
+
+README généré automatiquement à partir des scripts du dossier scripts/.

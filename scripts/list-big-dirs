@@ -1,1 +1,2 @@
+#!/bin/bash
 du -Sh / 2>/dev/null | sort -rh | head -n 30

@@ -1,4 +1,5 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo ""Generate a README.md with file summaries and comments (no parameters)""; exit 0; fi
 
 # Obtient le nom du répertoire actuel
 directory_name=$(basename "$PWD")

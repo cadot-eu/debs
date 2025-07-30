@@ -1,1 +1,2 @@
+#!/bin/bash
 for file in "$arg"/*.{jpg,jpeg,png,JPEG,JPG,PNG}; do convert $file -resize $1 $file; done

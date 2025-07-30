@@ -1,4 +1,5 @@
 #!/bin/bash
+if [[ "$1" == "-h" ]]; then echo ""Generates README.md from scripts in scripts/ directory, showing script names, descriptions, usage, and examples." Parameters: -h (help)"; exit 0; fi
 # Génère dynamiquement le README.md à partir des scripts présents dans scripts/
 
 SCRIPTS_DIR="$(dirname "$0")"
