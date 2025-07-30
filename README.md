@@ -67,7 +67,6 @@
 | pdftoepub | - | - | - |
 | playlist-create | - | - | - |
 | port-application-used | - | - | - |
-| readme-generate | - | - | - |
 | removecrud | - | - | - |
 | restore | - | - | - |
 | rotate-screen | - | - | - |
@@ -157,7 +156,6 @@
 | pdftoepub | - | - | - |
 | playlist-create | - | - | - |
 | port-application-used | - | - | - |
-| readme-generate | - | - | - |
 | removecrud | - | - | - |
 | restore | - | - | - |
 | rotate-screen | - | - | - |
