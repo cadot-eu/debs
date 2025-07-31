@@ -1,15 +1,7 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Counts and lists 404 error URLs from log files in a directory. Usage: $0 /path/to/logs\""
-        exit 0
-    fi
-done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Counts and lists 404 error URLs from log files in a directory. Usage: $0 /path/to/logs""
+        echo "\"Analyzes log files for 404 errors, counting occurrences per URL. Usage: $0 /path/to/logs\""
         exit 0
     fi
 done

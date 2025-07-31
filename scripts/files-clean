@@ -1,15 +1,7 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Clean filenames by replacing special characters in a directory [directory] (-h for help)\""
-        exit 0
-    fi
-done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Clean filenames by replacing special characters in a directory [directory] (-h for help)""
+        echo "\"Clean filenames by replacing special chars in a directory [directory] (-h for help)\""
         exit 0
     fi
 done

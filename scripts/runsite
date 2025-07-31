@@ -1,15 +1,7 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Run Docker Compose for Symfony, auto-generating configs; params: none\""
-        exit 0
-    fi
-done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Run Docker Compose for Symfony, auto-generating configs; params: none""
+        echo "\"Run Docker Compose with current directory as service name, auto-generate configs if missing; params: none\""
         exit 0
     fi
 done

@@ -1,15 +1,7 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Perform a ping scan (-sn) on the local network (192.168.1.0/24) using sudo nmap.\" Parameters: [-h] [custom_network_range]"
-        exit 0
-    fi
-done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Perform a ping scan (-sn) on the local network (192.168.1.0/24) using sudo nmap." Parameters: [-h] [custom_network_range]"
+        echo "\"Perform a ping scan (-sn) on the local network (192.168.1.0/24) using nmap with sudo.\" Parameters: [-h]"
         exit 0
     fi
 done

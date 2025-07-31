@@ -1,46 +1,17 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Automatically adds/updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]\""
-        exit 0
-    fi
-done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo ""Automatically adds or updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]""
-        exit 0
-    fi
-done
-for arg in "$@"; do if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then echo ""Automatically adds or updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]""; exit 0; fi; done
-
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "Automatically adds or updates -h help text in bash scripts, with --reset to remove existing help. [--reset] [script files...]"
+        echo "\"Automatically adds/updates shebang and help (-h/--help) blocks in bash scripts, parameters: script files...\""
         exit 0
     fi
 done
 
 
-# Détecte --reset n'importe où dans les arguments
-RESET=0
-for arg in "$@"; do
-    if [[ "$arg" == "--reset" ]]; then
-        RESET=1
-    fi
-done
 
-# Check if any arguments are provided (hors --reset)
-ARG_COUNT=0
-for arg in "$@"; do
-    if [[ "$arg" != "--reset" ]]; then
-        ARG_COUNT=$((ARG_COUNT+1))
-    fi
-done
-if [ $ARG_COUNT -eq 0 ]; then
-    echo "Usage: $0 [--reset] [script files...]"
+
+# Check if any arguments are provided
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 [script files...]"
     exit 1
 fi
 
@@ -53,10 +24,6 @@ fi
 
 # Iterate over all provided files
 for script in "$@"; do
-    # Ignore --reset argument
-    if [[ "$script" == "--reset" ]]; then
-        continue
-    fi
     echo "[DEBUG] Processing $script..."
     # Check if it's a file
     if [[ -f "$script" ]]; then
@@ -82,31 +49,29 @@ for script in "$@"; do
             fi
             echo "[DEBUG] Valid shebang for $script"
             
-            # If --reset, remove any existing -h block
-            if [ $RESET -eq 1 ]; then
-                echo "[DEBUG] Reset mode for $script"
-                tmpfile=$(mktemp)
-                # Remove multi-line -h blocks and single-line -h blocks
-                awk 'BEGIN{skip=0}
-                    /^if \[\[ "\$1" == "-h"/ && /fi$/ {next}
-                    /^if \[\[ "\$1" == "-h"/ {skip=1; next}
-                    skip && /^fi/ {skip=0; next}
-                !skip {print}' "$script" > "$tmpfile"
-                mv "$tmpfile" "$script"
-                echo "[INFO] -h block removed from $script"
-            fi
+            # Toujours supprimer les anciens blocs -h/--help (multi-lignes et une ligne)
+            tmpfile=$(mktemp)
+            awk 'BEGIN{skip=0}
+                # Multi-ligne: for arg in "$@"; do ... if [[ "$arg" == "-h" ... fi ... done
+                /^for arg in \"\$@\"; do/ {block=NR;}
+                skip==0 && /^\s*for arg in \"\$@\"; do/ {skip=1; printnext=0; next}
+                skip==1 && /\s*if \[\[ \"\$arg\" == "-h"/ {printnext=0; next}
+                skip==1 && /\s*echo / {printnext=0; next}
+                skip==1 && /\s*exit 0/ {printnext=0; next}
+                skip==1 && /\s*fi/ {printnext=0; next}
+                skip==1 && /\s*done/ {skip=0; next}
+                /for arg in \"\$@\"; do if \[\[ \"\$arg\" == "-h"/ {next}
+                # Ancienne version: if [[ "$1" == "-h" ... fi
+                /^if \[\[ \"\$1\" == "-h"/ {skip=2; next}
+                skip==2 && /fi/ {skip=0; next}
+            skip==0 {print}' "$script" > "$tmpfile"
+            mv "$tmpfile" "$script"
+            echo "[INFO] Tous les anciens blocs -h supprimés de $script"
             
-            # Check if a -h block already exists
-            if grep -q 'if \[\[ "\$1" == "-h"' "$script"; then
-                echo "[INFO] -h block already present in $script, skipping."
-                continue
-            fi
-            
-            # Add the -h block only if it doesn't exist
+            # Ajout du bloc -h
             if [[ -n "$DEEPSEEK" ]]; then
                 TMP_JSON=$(mktemp)
                 prompt="Provide only a very short one-line description for this bash script (for the -h option), also listing possible parameters. Provide nothing else."
-                # Escape the code to avoid formatting issues
                 script_content=$(sed ':a;N;$!ba;s/\n/\\n/g;s/\"/\\\"/g' "$script")
                 jq -n --arg prompt "$prompt" --arg content "$script_content" '{
                     model: "deepseek-chat",
@@ -115,12 +80,11 @@ for script in "$@"; do
                         {role: "user", content: ($prompt + "\n" + $content)}
                     ]
                 }' > "$TMP_JSON"
-                raw_response=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
+                helptext=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
                     -H "Content-Type: application/json" \
                     -H "Authorization: Bearer $DEEPSEEK" \
                 --data-binary "@${TMP_JSON}" | jq -r '.choices[0].message.content')
                 rm -f "$TMP_JSON"
-                helptext="$raw_response"
                 if [[ -z "$helptext" || "$helptext" == "null" ]]; then
                     helptext="Script $script: utility script (add a description here)"
                 fi
@@ -139,7 +103,6 @@ for script in "$@"; do
             # Place le -h block juste après le shebang
             {
                 echo "$shebang"
-                echo -e "# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments"
                 echo -e "for arg in \"\$@\"; do"
                 echo -e "    if [[ \"\$arg\" == \"-h\" || \"\$arg\" == \"--help\" ]]; then"
                 echo -e "        echo \"$safe_helptext\""

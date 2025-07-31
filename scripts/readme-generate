@@ -1,20 +1,12 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Generate README.md table from script help texts (-h options) in the scripts directory. Parameters: none.\""
+        echo "Generate README.md from script help texts (-h); parameters: none."
         exit 0
     fi
 done
 
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "Generate README.md table from script help texts (-h options) in the scripts directory. Parameters: none."
-        exit 0
-    fi
-done
 
 SCRIPTS_DIR="$(dirname "$0")"
 

@@ -1,15 +1,7 @@
 #!/bin/bash
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Backup PostgreSQL database and uploads folder with parameters: [CONTAINER_NAME DB_NAME PG_USER PG_PASSWORD TIMESTAMP DEST_DIR SITE_DIR] or interactive prompts.\""
-        exit 0
-    fi
-done
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
-for arg in "$@"; do
-    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "Backup PostgreSQL database and uploads folder with parameters: [CONTAINER_NAME DB_NAME PG_USER PG_PASSWORD TIMESTAMP DEST_DIR SITE_DIR] or interactive prompts."
+        echo "\"Backup PostgreSQL database and uploads folder: [-h] [container_name db_name pg_user pg_password timestamp dest_dir site_dir]\""
         exit 0
     fi
 done

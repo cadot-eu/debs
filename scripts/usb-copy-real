@@ -1,0 +1,10 @@
+#!/bin/bash
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Adjust VM dirty memory thresholds: sets dirty_background_bytes to 16MB and dirty_bytes to 48MB.\" No parameters."
+        exit 0
+    fi
+done
+#peut être copié à la fin de /etc/sysctl.conf
+sudo echo $((16*1024*1024)) > /proc/sys/vm/dirty_background_bytes
+sudo echo $((48*1024*1024)) > /proc/sys/vm/dirty_bytes

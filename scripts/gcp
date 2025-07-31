@@ -1,12 +1,11 @@
 #!/bin/bash
-
-# Affiche l'aide si -h ou --help est présent n'importe où dans les arguments
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "Automated git workflow with tests, auto-commit messages via Deepseek, and pushes - options: [-f|--force] [-p|--passtest] [-h|--help]"
+        echo "\"Commit helper with auto-message generation via Deepseek API, options: [-f|--force] [-p|--passtest] [-h|--help]\""
         exit 0
     fi
 done
+
 
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)

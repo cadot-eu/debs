@@ -1,0 +1,9 @@
+#!/bin/bash
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Usage: $0 [-h] - Resets and cleans a git repo (hard reset, force clean), requires sudo.\""
+        exit 0
+    fi
+done
+sudo git reset --hard
+sudo git clean -fd
