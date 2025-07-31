@@ -30,11 +30,8 @@ cat > "$README" <<EOF
 # Scripts disponibles
 
 | Script | Description/Usage/Exemple |
+|--------|--------------------------|
 EOF
-
-
-
-echo "|--------|--------------------|---------|" >> "$README"
 
 for script in "$SCRIPTS_DIR"/*; do
     # Ignore ce script lui-même et les fichiers non exécutables

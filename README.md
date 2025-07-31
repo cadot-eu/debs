@@ -1,7 +1,7 @@
 # Scripts disponibles
 
 | Script | Description/Usage/Exemple |
-|--------|--------------------|---------|
+|--------|--------------------------|
 | 404-count-in-logs | Counts and lists 404 error URLs from log files in a directory. Usage: /home/michael/bin/404-count-in-logs /path/to/logs |
 | backup | Backup script using duplicity (params: full, local, or none for incremental) |
 | cadd-rro-ind | Sets CAP_NET_BIND_SERVICE capability on Caddy binary to allow binding to privileged ports (<1024). No parameters. |
