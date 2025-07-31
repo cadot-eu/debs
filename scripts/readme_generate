@@ -30,7 +30,6 @@ cat > "$README" <<EOF
 # Scripts disponibles
 
 | Script | Description/Usage/Exemple |
-|--------|--------------------------|
 EOF
 
 
