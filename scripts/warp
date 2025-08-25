@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <num>"
+    exit 1
+fi
+
+NUM=$1
+USERNAME="warp$NUM"
+
+# Vérifie si l'utilisateur existe déjà
+if id "$USERNAME" &>/dev/null; then
+    echo "L'utilisateur $USERNAME existe déjà."
+else
+    sudo adduser "$USERNAME" || { echo "Erreur lors de la création de l'utilisateur."; exit 1; }
+fi
+
+# Autorise l'accès X pour cet utilisateur
+xhost +SI:localuser:"$USERNAME"
+
+# Ajoute les groupes si ce n'est pas déjà fait
+sudo usermod -aG michael "$USERNAME"
+sudo usermod -aG "$USERNAME" michael
+
+echo "Configuration terminée pour $USERNAME."
+# Lance warp-terminal en tant qu'utilisateur
+sudo -u "$USERNAME" warp-terminal || echo "Impossible de lancer warp-terminal."
+

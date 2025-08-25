@@ -8,11 +8,19 @@ done
 
 
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < .env
 fi
 
 if [ -f .env.local ]; then
-    export $(grep -v '^#' .env.local | xargs)
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < .env.local
 fi
 
 function show_usage() {
@@ -32,9 +40,17 @@ message=""
 
 # Charger .env.local uniquement depuis ~/debs ou ~/git/debs (jamais local)
 if [ -f "$HOME/debs/.env.local" ]; then
-    export $(grep -v '^#' "$HOME/debs/.env.local" | xargs)
-    elif [ -f "$HOME/git/debs/.env.local" ]; then
-    export $(grep -v '^#' "$HOME/git/debs/.env.local" | xargs)
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < "$HOME/debs/.env.local"
+elif [ -f "$HOME/git/debs/.env.local" ]; then
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < "$HOME/git/debs/.env.local"
 fi
 
 # Parsing des options et récupération du message (premier argument non-option)

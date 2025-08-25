@@ -1,8 +1,14 @@
 #!/bin/bash
+
+# Gestion du paramètre --pass
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
         echo "\"Reset and import PostgreSQL database: [container] [db] [user] [password] [file]\""
+        echo "Option supplémentaire : --pass <mot_de_passe> pour définir le mot de passe PostgreSQL."
         exit 0
+    fi
+    if [[ "$arg" == --pass* ]]; then
+        PG_PASSWORD="${arg#--pass }"
     fi
 done
 
@@ -14,75 +20,103 @@ DEFAULT_NAME=$(basename "$PWD")
 
 # 📌 Valeurs par défaut basées sur le nom du dossier
 DEFAULT_CONTAINER="${DEFAULT_NAME}-db"
-DEFAULT_DB="db${DEFAULT_NAME}"
+DEFAULT_DB="${DEFAULT_NAME}"
 DEFAULT_USER="${DEFAULT_NAME}"
 DEFAULT_VOLUME="database_data-${DEFAULT_NAME}"
 
-# 📌 Demande d'infos avec valeurs par défaut intelligentes
-read -p "Nom du conteneur PostgreSQL (par défaut: ${DEFAULT_CONTAINER}): " CONTAINER_NAME
-CONTAINER_NAME=${CONTAINER_NAME:-$DEFAULT_CONTAINER}
 
-read -p "Nom de la base de données (par défaut: ${DEFAULT_DB}): " DB_NAME
-DB_NAME=${DB_NAME:-$DEFAULT_DB}
+# Si le mot de passe est passé en argument, on utilise tous les paramètres par défaut sans interaction
+if [[ -n "$PG_PASSWORD" ]]; then
+    CONTAINER_NAME="$DEFAULT_CONTAINER"
+    DB_NAME="$DEFAULT_DB"
+    PG_USER="$DEFAULT_USER"
+    VOLUME_NAME="$DEFAULT_VOLUME"
+else
+    # 📌 Demande d'infos avec valeurs par défaut intelligentes
+    read -p "Nom du conteneur PostgreSQL (par défaut: ${DEFAULT_CONTAINER}): " CONTAINER_NAME
+    CONTAINER_NAME=${CONTAINER_NAME:-$DEFAULT_CONTAINER}
+    
+    read -p "Nom de la base de données (par défaut: ${DEFAULT_DB}): " DB_NAME
+    DB_NAME=${DB_NAME:-$DEFAULT_DB}
+    
+    read -p "Nom de l'utilisateur PostgreSQL (par défaut: ${DEFAULT_USER}): " PG_USER
+    PG_USER=${PG_USER:-$DEFAULT_USER}
+    
+    read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
+    
+    VOLUME_NAME=$DEFAULT_VOLUME
+fi
 
-read -p "Nom de l'utilisateur PostgreSQL (par défaut: ${DEFAULT_USER}): " PG_USER
-PG_USER=${PG_USER:-$DEFAULT_USER}
 
-read -p "Mot de passe PostgreSQL (par défaut: vide): " PG_PASSWORD
-
-VOLUME_NAME=$DEFAULT_VOLUME
 
 # 📌 Sélection du fichier SQL
+JOUR=$(date +"%A")
+DEFAULT_SQL_FILE="backups/${DEFAULT_NAME}_${JOUR}.sql"
+
 if [ -f ".env.local" ]; then
-    # Récupère le nom du répertoire courant
     SSH_HOST=$(grep '^SSH=' .env.local | cut -d '=' -f2)
-    # Récupère la liste des fichiers sql du répertoire backups et l'affiche
-    distant_files=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | nl)
-    if [ -n "$distant_files" ]; then
+    if [[ -n "$PG_PASSWORD" ]]; then
+        # Mode automatique : sélectionne le fichier du jour
+        SELECTED_FILE="$DEFAULT_SQL_FILE"
+        SELECTED_FILE_LOCAL=$(basename "$SELECTED_FILE")
+        echo "Import automatique : $SELECTED_FILE"
+        scp $SSH_HOST:$SELECTED_FILE .
+        SELECTED_FILE_TAR_GZ=${SELECTED_FILE%.sql}.tar.gz
+        scp $SSH_HOST:backups/$SELECTED_FILE_TAR_GZ . 2>/dev/null
+        SELECTED_FILE="$SELECTED_FILE_LOCAL"
+    else
+        distant_files=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | nl)
         echo "\n📁 Fichiers SQL distants :"
         echo "$distant_files"
-        read -p "Numéro du fichier SQL distant à importer: " file_number
-        SELECTED_FILE=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null | awk -v num="$file_number" 'NR == num {print $1}' | xargs -n1 basename)
-        if [ -n "$SELECTED_FILE" ]; then
-            # Récupère le fichier SQL distant
-            scp $SSH_HOST:backups/$SELECTED_FILE .
-            # Récupère le fichier tar.gz associé si demandé
-            read -p "Voulez-vous récupérer le fichier tar.gz associé ? (O/n): " response
-            response=${response,,}
-            if [[ -z "$response" || "$response" == "o" || "$response" == "y" ]]; then
-                # Extraire juste le nom du fichier sans le chemin backups/
-                SELECTED_FILE_BASENAME=$(basename "$SELECTED_FILE")
-                SELECTED_FILE_TAR_GZ=${SELECTED_FILE_BASENAME%.sql}.tar.gz
-                scp $SSH_HOST:backups/$SELECTED_FILE_TAR_GZ .
-            fi
+        # Place le fichier du jour en premier dans la liste
+        distant_files=$(ssh $SSH_HOST "ls -1 backups/${DEFAULT_NAME}_*.sql" 2>/dev/null)
+        if echo "$distant_files" | grep -qx "$DEFAULT_SQL_FILE"; then
+            files_list="$DEFAULT_SQL_FILE\n$(echo \"$distant_files\" | grep -v \"$DEFAULT_SQL_FILE\")"
         else
-            echo "❌ Sélection invalide. Veuillez choisir un numéro de fichier correct."
+            files_list="$distant_files"
+        fi
+        files_list_numbered=$(echo "$files_list" | nl)
+        echo "\n📁 Fichiers SQL distants :"
+        echo "$files_list_numbered"
+        read -p "Numéro du fichier à importer : " file_number
+        SELECTED_FILE=$(echo "$files_list" | awk -v num="$file_number" 'NR == num {print $1}')
+        if [ -z "$SELECTED_FILE" ]; then
+            echo "❌ Sélection invalide."
             exit 1
         fi
-    else
-        # Sinon propose les fichiers .sql locaux
-        select_file=$(ls *.sql 2>/dev/null | nl)
-        if [ -z "$select_file" ]; then
-            echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
-            exit 1
+        scp $SSH_HOST:$SELECTED_FILE .
+        SELECTED_FILE_TAR_GZ=${SELECTED_FILE%.sql}.tar.gz
+        read -p "Voulez-vous récupérer le fichier tar.gz associé ? (O/n): " response
+        response=${response,,}
+        if [[ -z "$response" || "$response" == "o" || "$response" == "y" ]]; then
+            scp $SSH_HOST:backups/$SELECTED_FILE_TAR_GZ .
         fi
-        echo ""
-        echo "📁 Fichiers SQL locaux :"
-        echo "$select_file"
-        read -p "Numéro du fichier SQL local à importer: " file_number
-        SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
     fi
 else
-    select_file=$(ls *.sql 2>/dev/null | nl)
-    if [ -z "$select_file" ]; then
-        echo "❌ Aucun fichier .sql trouvé dans le répertoire courant."
-        exit 1
+    if [[ -n "$PG_PASSWORD" ]]; then
+        # Mode automatique : sélectionne le fichier du jour
+        SELECTED_FILE="$DEFAULT_SQL_FILE"
+        echo "Import automatique : $SELECTED_FILE"
+    else
+        select_file=$(ls backups/${DEFAULT_NAME}_*.sql 2>/dev/null | nl)
+        echo "\n📁 Fichiers SQL locaux :"
+        echo "$select_file"
+        local_files=$(ls backups/${DEFAULT_NAME}_*.sql 2>/dev/null)
+        if echo "$local_files" | grep -qx "$DEFAULT_SQL_FILE"; then
+            files_list="$DEFAULT_SQL_FILE\n$(echo \"$local_files\" | grep -v \"$DEFAULT_SQL_FILE\")"
+        else
+            files_list="$local_files"
+        fi
+        files_list_numbered=$(echo "$files_list" | nl)
+        echo "\n📁 Fichiers SQL locaux :"
+        echo "$files_list_numbered"
+        read -p "Numéro du fichier à importer : " file_number
+        SELECTED_FILE=$(echo "$files_list" | awk -v num="$file_number" 'NR == num {print $1}')
+        if [[ ! -f "$SELECTED_FILE" ]]; then
+            echo "❌ Fichier sélectionné introuvable."
+            exit 1
+        fi
     fi
-    echo ""
-    echo "📁 Fichiers SQL locaux :"
-    echo "$select_file"
-    read -p "Numéro du fichier SQL local à importer: " file_number
-    SELECTED_FILE=$(echo "$select_file" | awk -v num="$file_number" '$1 == num {print $2}')
 fi
 
 
@@ -98,12 +132,19 @@ if [ -z "$SELECTED_FILE" ]; then
     fi
 fi
 
-# 📌 Assignation des arguments en ligne de commande (prioritaire)
-CONTAINER_NAME=${1:-$CONTAINER_NAME}
-DB_NAME=${2:-$DB_NAME}
-PG_USER=${3:-$PG_USER}
-PG_PASSWORD=${4:-$PG_PASSWORD}
-SELECTED_FILE=${5:-$SELECTED_FILE}
+
+# Si --pass est utilisé, ignore les arguments positionnels
+if [[ -n "$PG_PASSWORD" ]]; then
+    # On garde les valeurs par défaut déjà définies
+    :
+else
+    # 📌 Assignation des arguments en ligne de commande (prioritaire)
+    CONTAINER_NAME=${1:-$CONTAINER_NAME}
+    DB_NAME=${2:-$DB_NAME}
+    PG_USER=${3:-$PG_USER}
+    PG_PASSWORD=${4:-$PG_PASSWORD}
+    SELECTED_FILE=${5:-$SELECTED_FILE}
+fi
 
 # 📌 Vérifier si le fichier d'import existe
 if [[ ! -f "$SELECTED_FILE" ]]; then
@@ -111,7 +152,12 @@ if [[ ! -f "$SELECTED_FILE" ]]; then
     exit 1
 fi
 
+
 echo "🚀 Configuration : 📦 Conteneur: $CONTAINER_NAME 🗄️ Base: $DB_NAME 👤 Utilisateur: $PG_USER 📁 Fichier: $SELECTED_FILE 💾 Volume: $VOLUME_NAME"
+
+# 📌 Liste des tables dans le fichier SQL (sans préfixe public.)
+tables_in_sql=$(grep -iE '^CREATE TABLE|^create table' "$SELECTED_FILE" | awk '{print $3}' | sed 's/"//g;s/^public\.//g' | sort | uniq)
+echo "Tables SQL : $(echo "$tables_in_sql" | paste -sd ' ')"
 
 # 📌 SUPPRESSION COMPLÈTE SI DEMANDÉE
 if [[ "$PURGE_VOLUME" == "y" || "$PURGE_VOLUME" == "Y" ]]; then
@@ -211,9 +257,23 @@ else
     exit 1
 fi
 
+
 # 📌 Vérification du succès de l'importation
+
+
 if [[ $? -eq 0 ]]; then
     echo "✅ Importation terminée avec succès."
+    tables_in_db=$(docker exec -t "$CONTAINER_NAME" psql -U "$PG_USER" -d "$DB_NAME" -t -c "\dt" | awk '{print $3}' | grep -v '^$' | sort | uniq)
+    echo "Tables DB : $(echo "$tables_in_db" | paste -sd ' ')"
+    # Comparaison simplifiée
+    missing_in_db=$(comm -23 <(echo "$tables_in_sql" | sort) <(echo "$tables_in_db" | sort))
+    missing_in_sql=$(comm -13 <(echo "$tables_in_sql" | sort) <(echo "$tables_in_db" | sort))
+    if [[ -n "$missing_in_db" ]]; then
+        echo "Manque dans DB : $missing_in_db"
+    fi
+    if [[ -n "$missing_in_sql" ]]; then
+        echo "Manque dans SQL : $missing_in_sql"
+    fi
 else
     echo "❌ Erreur lors de l'importation."
     exit 1
