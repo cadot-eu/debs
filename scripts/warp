@@ -13,6 +13,8 @@ if id "$USERNAME" &>/dev/null; then
     echo "L'utilisateur $USERNAME existe déjà."
 else
     sudo adduser "$USERNAME" || { echo "Erreur lors de la création de l'utilisateur."; exit 1; }
+    # Ajoute l'utilisateur au groupe sudo
+    sudo usermod -aG sudo "$USERNAME"
 fi
 
 # Autorise l'accès X pour cet utilisateur
