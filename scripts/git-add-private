@@ -43,5 +43,15 @@ fi
 echo -e "\nAppuie sur Entrée quand c'est fait..."
 read
 
-# Configure temporairement l'utilisation de la clé pour ce repo
-GIT_SSH_COMMAND="ssh -i $KEY_PATH" git clone "$REPO_URL"
+# Construit l'URL SSH à partir de l'URL fournie
+SSH_URL=""
+if [[ "$REPO_URL" =~ github.com[:/]+([^/]+)/([^/.]+) ]]; then
+    OWNER="${BASH_REMATCH[1]}"
+    REPO="${BASH_REMATCH[2]}"
+    SSH_URL="git@github.com:$OWNER/$REPO.git"
+else
+    echo "Erreur : impossible de construire l'URL SSH à partir de $REPO_URL"
+    exit 1
+fi
+# Clone le repo en SSH avec la clé générée
+GIT_SSH_COMMAND="ssh -i $KEY_PATH" git clone "$SSH_URL"

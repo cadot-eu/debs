@@ -21,6 +21,7 @@
 | fast | Set CPU governor to performance mode for cores 0-7." Parameters: none. |
 | files-clean | Clean filenames by replacing special chars in a directory [directory] (-h for help) |
 | gcp | Commit helper with auto-message generation via Deepseek API, options: [-f|--force] [-p|--passtest] [-h|--help] |
+| git-add-private | Génère une clé SSH privée pour le repository fourni (URL obligatoire), affiche la clé publique à ajouter sur GitHub, propose l'URL directe pour l'ajout, puis clone le repository en utilisant la clé générée. Usage : ./git-add-private https://github.com/owner/repo |
 | git-configs-ssh-key | Configure Git to use a specific SSH key for the current repository (-h for help). Parameters: none. |
 | git-news.json | Display commit history with subjects and dates; parameters: -h (help), --force, --help, or commit subjects. |
 | git-permissions-repair | Usage: git-permissions-repair" [-h] - Reset .git ownership and permissions to current user (755). |
