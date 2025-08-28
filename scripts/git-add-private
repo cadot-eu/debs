@@ -4,7 +4,12 @@
 
 set -e
 
-REPO_NAME=$(basename "$(pwd)")
+
+if [ -n "$1" ]; then
+    REPO_NAME="$1"
+else
+    read -p "Nom du repository (ex: rss): " REPO_NAME
+fi
 KEY_NAME="id_ed25519_${REPO_NAME}"
 KEY_PATH="$HOME/.ssh/$KEY_NAME"
 
