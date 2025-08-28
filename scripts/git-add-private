@@ -5,10 +5,21 @@
 set -e
 
 
+
 if [ -n "$1" ]; then
-    REPO_NAME="$1"
+    # Si c'est une URL, on extrait le nom du repo
+    if [[ "$1" =~ ^https?:// ]]; then
+        REPO_NAME=$(basename "$1" .git)
+    else
+        REPO_NAME="$1"
+    fi
 else
-    read -p "Nom du repository (ex: rss): " REPO_NAME
+    read -p "Nom du repository (ex: rss ou URL): " REPO_INPUT
+    if [[ "$REPO_INPUT" =~ ^https?:// ]]; then
+        REPO_NAME=$(basename "$REPO_INPUT" .git)
+    else
+        REPO_NAME="$REPO_INPUT"
+    fi
 fi
 KEY_NAME="id_ed25519_${REPO_NAME}"
 KEY_PATH="$HOME/.ssh/$KEY_NAME"
