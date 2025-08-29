@@ -34,11 +34,14 @@ if [ ! -d "$TARGET_DIR" ]; then
     mkdir -p "$TARGET_DIR"
 fi
 rm -f "$TARGET_DIR"/*
+
+# Rendre tous les scripts exécutables avant copie
 for script in "$SRC_DIR"/*; do
     base="$(basename "$script")"
     [ "$base" = "install.sh" ] && continue
     [ "$base" = "uninstall.sh" ] && continue
     [ -d "$script" ] && continue
+    chmod +x "$script"
     name="${base%.sh}"
     cp "$script" "$TARGET_DIR/$name"
     chmod +x "$TARGET_DIR/$name"
