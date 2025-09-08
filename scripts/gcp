@@ -144,7 +144,6 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     exit 1
                 fi
             else
-                echo "DEEPSEEK configuré, génération automatique du message de commit..."
                 
                 # Générer le diff
                 DIFF=$(git diff --cached)
@@ -192,7 +191,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 --data-binary "@${TMP_JSON}" | jq -r '.choices[0].message.content')
                 rm -f "$TMP_JSON"
                 # Nettoyer les balises ``` et ```json éventuelles de la réponse Deepseek
-                json_commit=$(echo "$raw_response" | tr -d '\r' | tr -d '\n' | sed -E 's/^```json//;s/^```//;s/```\$//;s/```//g')
+                json_commit=$(echo "$raw_response" | sed -E 's/^```json//;s/^```//;s/```$//;s/```//g' | tr -d '\r')
                 # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
                 if ! echo "$json_commit" | grep -q '^{.*}$'; then
                     echo "Erreur: la réponse Deepseek n'est pas un objet JSON. Réponse brute :"
@@ -201,6 +200,13 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 fi
                 commit_title=$(echo "$json_commit" | jq -r '.title')
                 commit_body=$(echo "$json_commit" | jq -r '.body')
+                
+                # Nettoyer les \n littéraux dans le titre et le corps
+                commit_title=$(echo "$commit_title" | sed 's/\\n/\n/g')
+                if [ "$commit_body" != "null" ]; then
+                    commit_body=$(echo "$commit_body" | sed 's/\\n/\n/g')
+                fi
+                
                 if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
                     echo "Erreur lors de la génération du message de commit avec Deepseek. Réponse brute :"
                     echo "$raw_response"
@@ -208,9 +214,9 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 fi
                 echo "Message de commit généré : $commit_title"
                 message="$commit_title"
-                # Ajoute le body si présent
+                # Ajouter le body si présent
                 if [ -n "$commit_body" ] && [ "$commit_body" != "null" ]; then
-                    message="$commit_title\n\n$commit_body"
+                    message=$(printf "%s\n\n%s" "$commit_title" "$commit_body")
                 fi
             fi
         fi
