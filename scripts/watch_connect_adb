@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Fichier pour sauvegarder les dernières valeurs utilisées
+CONFIG_FILE="$HOME/.adb_watch_config"
+
+# Couleurs pour l'affichage
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}   Connexion ADB Samsung Galaxy Watch${NC}"
+echo -e "${BLUE}========================================${NC}\n"
+
+# Charger les dernières valeurs si elles existent
+LAST_IP="192.168.1.29"
+LAST_PAIRING_PORT="37853"
+
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+    echo -e "${YELLOW}Dernières valeurs utilisées :${NC}"
+    echo -e "  IP : $LAST_IP"
+    echo -e "  Port pairage : $LAST_PAIRING_PORT"
+    echo ""
+fi
+
+# Demander l'adresse IP
+read -p "Adresse IP de la montre [$LAST_IP] : " IP_ADDRESS
+IP_ADDRESS=${IP_ADDRESS:-$LAST_IP}
+echo -e "${GREEN}✓ IP : $IP_ADDRESS${NC}"
+
+# Demander le port de pairage
+echo ""
+read -p "Port de pairage [$LAST_PAIRING_PORT] : " PAIRING_PORT
+PAIRING_PORT=${PAIRING_PORT:-$LAST_PAIRING_PORT}
+echo -e "${GREEN}✓ Port pairage : $PAIRING_PORT${NC}"
+
+# Demander le code de pairage (obligatoire, change à chaque fois)
+echo ""
+read -p "Code de pairage à 6 chiffres : " PAIRING_CODE
+if [ -z "$PAIRING_CODE" ]; then
+    echo -e "${RED}✗ Erreur : Code de pairage requis${NC}"
+    exit 1
+fi
+
+# Sauvegarder les paramètres pour la prochaine fois
+cat > "$CONFIG_FILE" << EOF
+LAST_IP="$IP_ADDRESS"
+LAST_PAIRING_PORT="$PAIRING_PORT"
+EOF
+
+# Étape 1 : Pairage
+echo -e "\n${BLUE}=== Étape 1 : Pairage ===${NC}"
+echo -e "Commande : adb pair ${IP_ADDRESS}:${PAIRING_PORT} ${PAIRING_CODE}"
+echo ""
+
+if adb pair "${IP_ADDRESS}:${PAIRING_PORT}" "${PAIRING_CODE}"; then
+    echo -e "${GREEN}✓ Pairage réussi !${NC}\n"
+    
+    # Petit délai pour laisser le temps à la montre
+    sleep 2
+    
+    # Vérifier les appareils détectés pour trouver le port
+    echo -e "${BLUE}Détection du port de connexion...${NC}"
+    DEVICES_OUTPUT=$(adb devices)
+    echo "$DEVICES_OUTPUT"
+    echo ""
+    
+    # Extraire le port de l'appareil détecté
+    DETECTED_PORT=$(echo "$DEVICES_OUTPUT" | grep "$IP_ADDRESS" | grep -oP ':\K[0-9]+' | head -1)
+    
+    if [ ! -z "$DETECTED_PORT" ]; then
+        echo -e "${GREEN}✓ Port détecté : $DETECTED_PORT${NC}\n"
+        CONNECT_PORT="$DETECTED_PORT"
+    else
+        echo -e "${YELLOW}Port non détecté automatiquement${NC}"
+        read -p "Entrez le port de connexion affiché sur la montre (ex: 37783) : " CONNECT_PORT
+        if [ -z "$CONNECT_PORT" ]; then
+            echo -e "${RED}✗ Port de connexion requis${NC}"
+            exit 1
+        fi
+    fi
+    
+    # Étape 2 : Connexion
+    echo -e "${BLUE}=== Étape 2 : Connexion ===${NC}"
+    echo -e "Commande : adb connect ${IP_ADDRESS}:${CONNECT_PORT}"
+    echo ""
+    
+    CONNECT_OUTPUT=$(adb connect "${IP_ADDRESS}:${CONNECT_PORT}" 2>&1)
+    echo "$CONNECT_OUTPUT"
+    
+    if echo "$CONNECT_OUTPUT" | grep -q "connected\|already connected"; then
+        echo -e "${GREEN}✓ Connexion établie !${NC}\n"
+        
+        # Étape 3 : Vérification
+        echo -e "${BLUE}=== Appareils connectés ===${NC}"
+        adb devices
+        echo ""
+        
+        echo -e "${GREEN}✓ Configuration terminée avec succès !${NC}"
+        echo -e "\nCommandes utiles :"
+        echo -e "  ${YELLOW}adb shell${NC}           - Accéder au shell de la montre"
+        echo -e "  ${YELLOW}adb logcat${NC}          - Voir les logs"
+        echo -e "  ${YELLOW}adb install app.apk${NC} - Installer une application"
+        echo -e "  ${YELLOW}adb disconnect${NC}      - Déconnecter la montre"
+    else
+        echo -e "${RED}✗ Échec de la connexion${NC}"
+        echo -e "\n${YELLOW}Essayez manuellement avec :${NC}"
+        echo -e "${YELLOW}adb connect ${IP_ADDRESS}:<PORT_AFFICHÉ_SUR_MONTRE>${NC}"
+        exit 1
+    fi
+else
+    echo -e "${RED}✗ Échec du pairage${NC}"
+    echo -e "\nVérifications :"
+    echo -e "  • Le code de pairage est-il correct ?"
+    echo -e "  • Le port de pairage est-il correct ?"
+    echo -e "  • Votre PC et la montre sont-ils sur le même réseau Wi-Fi ?"
+    exit 1
+fi

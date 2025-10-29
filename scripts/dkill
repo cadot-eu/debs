@@ -1,9 +1,19 @@
 #!/bin/bash
+# Si un argument est fourni, il s'agit du nom du conteneur Docker
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "Stop and remove a Docker container. Parameters: <container_name>"
+        echo "Stop Docker container. Parameters: [container_name]"
         exit 0
     fi
 done
-docker stop $1 || true
-docker rm $1 || true
+
+# Variables par défaut
+nom_du_docker=""
+if [ -n "$1" ]; then
+    nom_du_docker=$1
+else
+    nom_du_docker=$(basename "$(pwd)") # Nom du répertoire en cours par défaut si aucun argument n'est fourni
+fi
+
+docker stop "$nom_du_docker" || true
+docker rm "$nom_du_docker" || true

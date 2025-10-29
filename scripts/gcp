@@ -190,8 +190,9 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     -H "Authorization: Bearer $DEEPSEEK" \
                 --data-binary "@${TMP_JSON}" | jq -r '.choices[0].message.content')
                 rm -f "$TMP_JSON"
-                # Nettoyer les balises ``` et ```json éventuelles de la réponse Deepseek
-                json_commit=$(echo "$raw_response" | sed -E 's/^```json//;s/^```//;s/```$//;s/```//g' | tr -d '\r')
+                # Nettoyer les balises ``` et extraire le JSON proprement
+                clean_response=$(echo "$raw_response" | tr -d '\n' | sed 's/```json//g; s/```//g')
+                json_commit=$(echo "$clean_response" | sed 's/.*{\(.*\)}.*/{\1}/')
                 # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
                 if ! echo "$json_commit" | grep -q '^{.*}$'; then
                     echo "Erreur: la réponse Deepseek n'est pas un objet JSON. Réponse brute :"
