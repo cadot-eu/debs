@@ -1,8 +1,15 @@
 #!/bin/bash
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Run docker-compose with provided arguments; pass any valid docker-compose flags/commands (e.g., up, down, build, logs).\""
+        echo "Run docker-compose with provided arguments; pass any valid docker-compose flags/commands (e.g., up, down, build, logs)."
         exit 0
     fi
 done
+
+# Si on lance "up" et qu'il y a un Dockerfile, build automatiquement
+if [[ "$*" == *"up"* ]] && [ -f "Dockerfile" ]; then
+    echo "🔨 Dockerfile détecté, build automatique..."
+    docker compose build
+fi
+
 docker compose $*
