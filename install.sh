@@ -124,3 +124,4 @@ case ":$PATH:" in
 esac
 
 echo "Tous les scripts ont été installés dans $TARGET_DIR."
+source ~/.bashrc
