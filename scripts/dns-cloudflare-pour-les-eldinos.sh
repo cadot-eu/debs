@@ -9,12 +9,6 @@ echo "================================================"
 echo ""
 
 # Vérifier si le script est exécuté en root
-if [ "$EUID" -ne 0 ]; then 
-    echo "⚠️  Ce script doit être exécuté avec sudo"
-    echo "Usage: sudo bash $0"
-    exit 1
-fi
-
 # Connexions à configurer
 CONNECTIONS=("eldino" "eldino5G")
 
@@ -49,7 +43,7 @@ done
 
 # Backup du resolv.conf actuel
 if [ -f /etc/resolv.conf ]; then
-    cp /etc/resolv.conf /etc/resolv.conf.backup.$(date +%Y%m%d-%H%M%S)
+    sudo cp /etc/resolv.conf /etc/resolv.conf.backup.$(date +%Y%m%d-%H%M%S)
     echo "💾 Backup de /etc/resolv.conf créé"
 fi
 
@@ -60,14 +54,14 @@ echo "🔧 Configuration de NetworkManager..."
 NMCONF="/etc/NetworkManager/NetworkManager.conf"
 if ! grep -q "dns=none" "$NMCONF" 2>/dev/null; then
     # Backup du fichier de config
-    cp "$NMCONF" "${NMCONF}.backup.$(date +%Y%m%d-%H%M%S)" 2>/dev/null
+    sudo cp "$NMCONF" "${NMCONF}.backup.$(date +%Y%m%d-%H%M%S)" 2>/dev/null
     
     # Ajouter dns=none dans la section [main]
     if grep -q "^\[main\]" "$NMCONF"; then
-        sed -i '/^\[main\]/a dns=none' "$NMCONF"
+        sudo sed -i '/^\[main\]/a dns=none' "$NMCONF"
     else
-        echo "[main]" >> "$NMCONF"
-        echo "dns=none" >> "$NMCONF"
+        sudo echo "[main]" >> "$NMCONF"
+        sudo echo "dns=none" >> "$NMCONF"
     fi
     echo "✓ NetworkManager configuré pour ne pas modifier resolv.conf"
 else
@@ -78,7 +72,7 @@ fi
 echo ""
 echo "🔒 Protection du fichier resolv.conf..."
 
-cat > /etc/resolv.conf << EOF
+sudo cat > /etc/resolv.conf << EOF
 # Configuration DNS Cloudflare
 # Généré automatiquement - $(date)
 nameserver 1.1.1.1
@@ -88,14 +82,14 @@ nameserver 2606:4700:4700::1001
 EOF
 
 # Rendre le fichier immuable (optionnel)
-chattr -i /etc/resolv.conf 2>/dev/null
-chattr +i /etc/resolv.conf
+sudo chattr -i /etc/resolv.conf 2>/dev/null
+sudo chattr +i /etc/resolv.conf
 echo "✓ /etc/resolv.conf protégé contre les modifications"
 
 # Redémarrer NetworkManager
 echo ""
 echo "🔄 Redémarrage de NetworkManager..."
-systemctl restart NetworkManager
+sudo systemctl restart NetworkManager
 sleep 2
 
 # Réactiver les connexions
