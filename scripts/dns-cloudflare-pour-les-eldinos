@@ -8,7 +8,6 @@ echo "Configuration DNS Cloudflare - Blocage Proximus"
 echo "================================================"
 echo ""
 
-# Vérifier si le script est exécuté en root
 # Connexions à configurer
 CONNECTIONS=("eldino" "eldino5G")
 
@@ -20,20 +19,17 @@ echo "🔧 Configuration des connexions..."
 echo ""
 
 for CONN in "${CONNECTIONS[@]}"; do
-    # Vérifier si la connexion existe
     if nmcli connection show "$CONN" &> /dev/null; then
         echo "📡 Configuration de: $CONN"
-        
-        # IPv4
-        nmcli connection modify "$CONN" ipv4.dns "$DNS_IPV4"
-        nmcli connection modify "$CONN" ipv4.ignore-auto-dns yes
+
+        sudo nmcli connection modify "$CONN" ipv4.dns "$DNS_IPV4"
+        sudo nmcli connection modify "$CONN" ipv4.ignore-auto-dns yes
         echo "   ✓ IPv4 configuré (1.1.1.1)"
-        
-        # IPv6
-        nmcli connection modify "$CONN" ipv6.dns "$DNS_IPV6"
-        nmcli connection modify "$CONN" ipv6.ignore-auto-dns yes
+
+        sudo nmcli connection modify "$CONN" ipv6.dns "$DNS_IPV6"
+        sudo nmcli connection modify "$CONN" ipv6.ignore-auto-dns yes
         echo "   ✓ IPv6 configuré"
-        
+
         echo ""
     else
         echo "⚠️  Connexion '$CONN' introuvable, ignorée"
@@ -53,15 +49,13 @@ echo "🔧 Configuration de NetworkManager..."
 
 NMCONF="/etc/NetworkManager/NetworkManager.conf"
 if ! grep -q "dns=none" "$NMCONF" 2>/dev/null; then
-    # Backup du fichier de config
     sudo cp "$NMCONF" "${NMCONF}.backup.$(date +%Y%m%d-%H%M%S)" 2>/dev/null
-    
-    # Ajouter dns=none dans la section [main]
+
     if grep -q "^\[main\]" "$NMCONF"; then
         sudo sed -i '/^\[main\]/a dns=none' "$NMCONF"
     else
-        sudo echo "[main]" >> "$NMCONF"
-        sudo echo "dns=none" >> "$NMCONF"
+        echo "[main]" | sudo tee -a "$NMCONF" > /dev/null
+        echo "dns=none" | sudo tee -a "$NMCONF" > /dev/null
     fi
     echo "✓ NetworkManager configuré pour ne pas modifier resolv.conf"
 else
@@ -72,16 +66,15 @@ fi
 echo ""
 echo "🔒 Protection du fichier resolv.conf..."
 
-sudo cat > /etc/resolv.conf << EOF
+sudo bash -c "cat > /etc/resolv.conf << EOF
 # Configuration DNS Cloudflare
 # Généré automatiquement - $(date)
 nameserver 1.1.1.1
 nameserver 1.0.0.1
 nameserver 2606:4700:4700::1111
 nameserver 2606:4700:4700::1001
-EOF
+EOF"
 
-# Rendre le fichier immuable (optionnel)
 sudo chattr -i /etc/resolv.conf 2>/dev/null
 sudo chattr +i /etc/resolv.conf
 echo "✓ /etc/resolv.conf protégé contre les modifications"
@@ -97,9 +90,9 @@ echo ""
 echo "🔄 Réactivation des connexions..."
 for CONN in "${CONNECTIONS[@]}"; do
     if nmcli connection show "$CONN" &> /dev/null; then
-        nmcli connection down "$CONN" 2>/dev/null
+        sudo nmcli connection down "$CONN" 2>/dev/null
         sleep 1
-        nmcli connection up "$CONN" 2>/dev/null
+        sudo nmcli connection up "$CONN" 2>/dev/null
         echo "   ✓ $CONN reconnecté"
     fi
 done
