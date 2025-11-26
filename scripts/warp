@@ -1,5 +1,4 @@
 #!/bin/bash
-
 if [ -z "$1" ]; then
     echo "Usage: $0 <num>"
     exit 1
@@ -16,8 +15,19 @@ else
     # Ajoute l'utilisateur au groupe sudo
     sudo usermod -aG sudo "$USERNAME"
 fi
-sudo mkdir /home/"$USERNAME"
+
+sudo mkdir -p /home/"$USERNAME"
 sudo chown "$USERNAME": /home/"$USERNAME"
+
+# Copie le .bashrc de michael vers le nouveau home
+if [ -f /home/michael/.bashrc ]; then
+    sudo cp /home/michael/.bashrc /home/"$USERNAME"/.bashrc
+    sudo chown "$USERNAME":"$USERNAME" /home/"$USERNAME"/.bashrc
+    echo ".bashrc copié depuis /home/michael"
+else
+    echo "Avertissement: /home/michael/.bashrc n'existe pas"
+fi
+
 # Autorise l'accès X pour cet utilisateur
 xhost +SI:localuser:"$USERNAME"
 
@@ -26,6 +36,8 @@ sudo usermod -aG michael "$USERNAME"
 sudo usermod -aG "$USERNAME" michael
 
 echo "Configuration terminée pour $USERNAME."
+
 # Lance warp-terminal en tant qu'utilisateur
 sudo -u "$USERNAME" warp-terminal || echo "Impossible de lancer warp-terminal."
 
+sudo rm -r /home/"$USERNAME"
