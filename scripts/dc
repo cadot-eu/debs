@@ -12,4 +12,4 @@ if [[ "$*" == *"up"* ]] && [ -f "Dockerfile" ]; then
     docker compose build
 fi
 
-docker compose $*
+docker compose "$@"
