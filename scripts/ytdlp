@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Si plus de 2 paramètres → URL probablement non entourée de guillemets
+if [ "$#" -gt 2 ]; then
+  echo "❌ Trop de paramètres détectés"
+  echo
+  echo "⚠️  L'URL DOIT être entre guillemets"
+  echo "    (sinon les & sont interprétés par le shell)"
+  echo
+  echo "Usage : $0 \"<URL>\" <nom_fichier_sans_extension>"
+  echo "Exemple :"
+  echo "  $0 \"https://www.youtube.com/watch?v=XXX&list=YYY&index=5\" ma_video"
+  exit 1
+fi
+
+# Nombre incorrect de paramètres
+if [ "$#" -ne 2 ]; then
+  echo "❌ Mauvaise utilisation"
+  echo
+  echo "Usage : $0 \"<URL>\" <nom_fichier_sans_extension>"
+  exit 1
+fi
+
+URL="$1"
+BASENAME="$2"
+
+# Refuser extension dans le nom de fichier
+if [[ "$BASENAME" == *.* ]]; then
+  echo "❌ Ne pas donner d'extension pour le fichier destination"
+  echo "   Exemple correct   : ma_video"
+  echo "   Exemple incorrect : ma_video.mp4"
+  exit 1
+fi
+
+yt-dlp \
+  --write-subs \
+  --embed-subs \
+  --sub-lang "fr,en" \
+  --sub-format "vtt/srt" \
+  --convert-subs srt \
+  -o "${BASENAME}.%(ext)s" \
+  "$URL"
