@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Vérifie que l'utilisateur a fourni un dépôt
+if [ -z "$1" ]; then
+  echo "Usage: $0 <git_repo_ssh_url>"
+  exit 1
+fi
+
+REPO_URL="$1"
+
+# Liste les clés SSH dans ~/.ssh
+echo "Clés disponibles dans ~/.ssh :"
+select KEY in ~/.ssh/id_*; do
+  if [ -n "$KEY" ]; then
+    echo "Vous avez choisi : $KEY"
+    break
+  else
+    echo "Choix invalide. Réessayez."
+  fi
+done
+
+# Cloner avec la clé sélectionnée
+echo "Clonage du dépôt avec la clé sélectionnée..."
+GIT_SSH_COMMAND="ssh -i $KEY" git clone "$REPO_URL"

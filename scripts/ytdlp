@@ -32,11 +32,36 @@ if [[ "$BASENAME" == *.* ]]; then
   exit 1
 fi
 
-yt-dlp \
-  --write-subs \
-  --embed-subs \
-  --sub-lang "fr,en" \
-  --sub-format "vtt/srt" \
-  --convert-subs srt \
-  -o "${BASENAME}.%(ext)s" \
-  "$URL"
+echo "📥 Téléchargement avec sous-titres français..."
+
+# Commande exacte avec français
+yt-dlp --write-subs --sub-langs fr --embed-subs --no-playlist -o "${BASENAME}.%(ext)s" "$URL"
+
+echo
+echo "🔍 Vérification de la présence des sous-titres français..."
+
+# Vérifier si un fichier .fr.srt existe
+if ls "${BASENAME}"*.fr.* 2>/dev/null | grep -q .; then
+  echo "✅ Sous-titres français trouvés et intégrés !"
+else
+  echo "⚠️  Aucun sous-titre français trouvé"
+  echo "🗑️  Suppression du fichier téléchargé..."
+  rm -f "${BASENAME}".*
+  
+  echo "📥 Nouveau téléchargement avec sous-titres anglais..."
+  
+  # Même commande exacte mais avec anglais
+  yt-dlp --write-subs --sub-langs en --embed-subs --no-playlist -o "${BASENAME}.%(ext)s" "$URL"
+  
+  echo
+  echo "🔍 Vérification de la présence des sous-titres anglais..."
+  
+  if ls "${BASENAME}"*.en.srt 2>/dev/null | grep -q .; then
+    echo "✅ Sous-titres anglais trouvés et intégrés !"
+  else
+    echo "⚠️  Aucun sous-titre disponible"
+    echo "✅ Vidéo téléchargée sans sous-titres"
+  fi
+fi
+
+echo "✅ Terminé !"
