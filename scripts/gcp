@@ -1,7 +1,7 @@
 #!/bin/bash
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Commit helper with auto-message generation via Deepseek API, options: [-f|--force] [-p|--passtest] [-h|--help]\""
+        echo "\"Commit helper with auto-message generation via OpenRouter API, options: [-f|--force] [-p|--passtest] [-h|--help]\""
         exit 0
     fi
 done
@@ -51,6 +51,31 @@ elif [ -f "$HOME/git/debs/.env.local" ]; then
             export "$line"
         fi
     done < "$HOME/git/debs/.env.local"
+fi
+
+# Vérifier si OPENROUTER_MODEL est défini, sinon utiliser z-ai/glm-4-5-air:free par défaut
+if [ -z "$OPENROUTER_MODEL" ]; then
+    # Essayer de récupérer OPENROUTER_MODEL depuis les variables globales
+    if [ -f "$HOME/.bashrc" ]; then
+        source "$HOME/.bashrc" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.profile" ]; then
+        source "$HOME/.profile" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.env" ]; then
+        while IFS= read -r line; do
+            if [[ $line =~ ^OPENROUTER_MODEL= ]]; then
+                export "$line"
+                echo "OPENROUTER_MODEL trouvé dans $HOME/.env"
+            fi
+        done < "$HOME/.env" 2>/dev/null || true
+    fi
+    
+    # Si toujours pas de OPENROUTER_MODEL, utiliser la valeur par défaut
+    if [ -z "$OPENROUTER_MODEL" ]; then
+        export OPENROUTER_MODEL="z-ai/glm-4-5-air:free"
+        echo "OPENROUTER_MODEL non configuré, utilisation de la valeur par défaut: $OPENROUTER_MODEL"
+    fi
 fi
 
 # Parsing des options et récupération du message (premier argument non-option)
@@ -106,7 +131,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
     else
         git add .
         
-        # Si pas de message fourni, essayer Deepseek
+        # Si pas de message fourni, essayer OpenRouter
         if [ -z "$message" ]; then
             # Essayer de récupérer OPENROUTER depuis les variables globales si pas définie localement
             if [ -z "$OPENROUTER" ]; then
@@ -176,6 +201,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     fi
                 fi
                 echo "Génération du commit par OpenRouter..."
+                echo "Modèle utilisé: $OPENROUTER_MODEL"
                 # Prompt strict pour forcer une réponse JSON et limiter la taille
                 PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
                 # Utiliser un fichier temporaire pour éviter la limite d'arguments
@@ -183,7 +209,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 echo -n "$PROMPT" > "$TMP_PROMPT"
                 TMP_JSON=$(mktemp)
                 # Générer le JSON manuellement pour éviter la limite d'arguments
-                printf '{"model": "kwaipilot/kat-coder-pro:free", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
+                printf '{"model": "'"$OPENROUTER_MODEL"'", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
                 jq -Rs . < "$TMP_PROMPT" >> "$TMP_JSON"
                 printf '}]}' >> "$TMP_JSON"
                 rm -f "$TMP_PROMPT"
@@ -196,7 +222,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 # Afficher la requête pour debug
                 echo "Envoi de la requête à OpenRouter..."
                 echo "Clé API: ${OPENROUTER:0:20}..."
-                echo "Modèle: kwaipilot/kat-coder-pro:free"
+                echo "Modèle: $OPENROUTER_MODEL"
                 
                 raw_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST https://openrouter.ai/api/v1/chat/completions \
                     -H "Content-Type: application/json" \
@@ -212,8 +238,31 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 # Vérifier le code HTTP
                 if [ "$HTTP_CODE" != "200" ]; then
                     echo "Erreur HTTP $HTTP_CODE lors de l'appel à OpenRouter."
-                    echo "Réponse complète: $raw_response"
-                    exit 1
+                    
+                    # Gérer spécifiquement l'erreur 401 (Unauthorized)
+                    if [ "$HTTP_CODE" == "401" ]; then
+                        error_msg=$(echo "$raw_response" | jq -r '.error.message // "Unknown error"')
+                        echo "Erreur d'authentification: $error_msg"
+                        echo "Vérifiez que votre clé API OpenRouter est valide et active."
+                        echo "Vous pouvez la vérifier sur: https://openrouter.ai/keys"
+                        echo ""
+                        echo "Voulez-vous fournir un message de commit manuellement ? (o/n)"
+                        read -r manual_input
+                        if [[ "$manual_input" =~ ^[oO]$ ]]; then
+                            echo "Veuillez fournir un message de commit :"
+                            read -r message
+                            if [ -z "$message" ]; then
+                                echo "Aucun message fourni, abandon."
+                                exit 1
+                            fi
+                        else
+                            echo "Abandon du commit."
+                            exit 1
+                        fi
+                    else
+                        echo "Réponse complète: $raw_response"
+                        exit 1
+                    fi
                 fi
                 
                 # Vérifier la réponse brute avant extraction
