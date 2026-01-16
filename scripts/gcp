@@ -53,7 +53,7 @@ elif [ -f "$HOME/git/debs/.env.local" ]; then
     done < "$HOME/git/debs/.env.local"
 fi
 
-# Vérifier si OPENROUTER_MODEL est défini, sinon utiliser z-ai/glm-4-5-air:free par défaut
+# Vérifier si OPENROUTER_MODEL est défini
 if [ -z "$OPENROUTER_MODEL" ]; then
     # Essayer de récupérer OPENROUTER_MODEL depuis les variables globales
     if [ -f "$HOME/.bashrc" ]; then
@@ -71,10 +71,25 @@ if [ -z "$OPENROUTER_MODEL" ]; then
         done < "$HOME/.env" 2>/dev/null || true
     fi
     
-    # Si toujours pas de OPENROUTER_MODEL, utiliser la valeur par défaut
+    # Si toujours pas de OPENROUTER_MODEL, signaler le problème
     if [ -z "$OPENROUTER_MODEL" ]; then
-        export OPENROUTER_MODEL="z-ai/glm-4-5-air:free"
-        echo "OPENROUTER_MODEL non configuré, utilisation de la valeur par défaut: $OPENROUTER_MODEL"
+        echo "ERREUR: OPENROUTER_MODEL n'est pas configuré."
+        echo "Veuillez définir OPENROUTER_MODEL dans votre ~/.bashrc ou ~/.env"
+        echo "Exemple: export OPENROUTER_MODEL=\"z-ai/glm-4-5-air:free\""
+        echo ""
+        echo "Voulez-vous fournir un message de commit manuellement ? (o/n)"
+        read -r manual_input
+        if [[ "$manual_input" =~ ^[oO]$ ]]; then
+            echo "Veuillez fournir un message de commit :"
+            read -r message
+            if [ -z "$message" ]; then
+                echo "Aucun message fourni, abandon."
+                exit 1
+            fi
+        else
+            echo "Abandon du commit."
+            exit 1
+        fi
     fi
 fi
 
