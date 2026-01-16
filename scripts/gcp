@@ -77,17 +77,10 @@ if [ -z "$OPENROUTER_MODEL" ]; then
         echo "Veuillez définir OPENROUTER_MODEL dans votre ~/.bashrc ou ~/.env"
         echo "Exemple: export OPENROUTER_MODEL=\"z-ai/glm-4-5-air:free\""
         echo ""
-        echo "Voulez-vous fournir un message de commit manuellement ? (o/n)"
-        read -r manual_input
-        if [[ "$manual_input" =~ ^[oO]$ ]]; then
-            echo "Veuillez fournir un message de commit :"
-            read -r message
-            if [ -z "$message" ]; then
-                echo "Aucun message fourni, abandon."
-                exit 1
-            fi
-        else
-            echo "Abandon du commit."
+        echo "Veuillez fournir un message de commit :"
+        read -r message
+        if [ -z "$message" ]; then
+            echo "Aucun message fourni, abandon."
             exit 1
         fi
     fi
@@ -261,64 +254,70 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                         echo "Vérifiez que votre clé API OpenRouter est valide et active."
                         echo "Vous pouvez la vérifier sur: https://openrouter.ai/keys"
                         echo ""
-                        echo "Voulez-vous fournir un message de commit manuellement ? (o/n)"
-                        read -r manual_input
-                        if [[ "$manual_input" =~ ^[oO]$ ]]; then
-                            echo "Veuillez fournir un message de commit :"
-                            read -r message
-                            if [ -z "$message" ]; then
-                                echo "Aucun message fourni, abandon."
-                                exit 1
-                            fi
-                        else
-                            echo "Abandon du commit."
+                        echo "Veuillez fournir un message de commit :"
+                        read -r message
+                        if [ -z "$message" ]; then
+                            echo "Aucun message fourni, abandon."
                             exit 1
                         fi
                     else
-                        echo "Réponse complète: $raw_response"
-                        exit 1
+                        # Gérer les erreurs 500+ et autres - demander directement le message
+                        error_msg=$(echo "$raw_response" | jq -r '.error.message // "Unknown error"')
+                        echo "Erreur serveur: $error_msg"
+                        echo ""
+                        echo "Veuillez fournir un message de commit :"
+                        read -r message
+                        if [ -z "$message" ]; then
+                            echo "Aucun message fourni, abandon."
+                            exit 1
+                        fi
+                        # Sortir de la boucle OpenRouter et utiliser le message manuel
+                        goto_commit=true
                     fi
                 fi
                 
-                # Vérifier la réponse brute avant extraction
-                if [ "$raw_response" = "null" ] || [ -z "$raw_response" ]; then
-                    echo "Erreur: OpenRouter a retourné une réponse nulle ou vide."
-                    echo "Vérifiez votre clé API et le modèle."
-                    echo "Réponse complète: $raw_response"
-                    exit 1
-                fi
-                
-                # Extraire le contenu de la réponse
-                raw_response=$(echo "$raw_response" | jq -r '.choices[0].message.content')
-                rm -f "$TMP_JSON"
-                # Nettoyer les balises ``` et extraire le JSON proprement
-                clean_response=$(echo "$raw_response" | tr -d '\n' | sed 's/```json//g; s/```//g')
-                json_commit=$(echo "$clean_response" | sed 's/.*{\(.*\)}.*/{\1}/')
-                # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
-                if ! echo "$json_commit" | grep -q '^{.*}$'; then
-                    echo "Erreur: la réponse OpenRouter n'est pas un objet JSON. Réponse brute :"
-                    echo "$raw_response"
-                    exit 1
-                fi
-                commit_title=$(echo "$json_commit" | jq -r '.title')
-                commit_body=$(echo "$json_commit" | jq -r '.body')
-                
-                # Nettoyer les \n littéraux dans le titre et le corps
-                commit_title=$(echo "$commit_title" | sed 's/\\n/\n/g')
-                if [ "$commit_body" != "null" ]; then
-                    commit_body=$(echo "$commit_body" | sed 's/\\n/\n/g')
-                fi
-                
-                if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
-                    echo "Erreur lors de la génération du message de commit avec OpenRouter. Réponse brute :"
-                    echo "$raw_response"
-                    exit 1
-                fi
-                echo "Message de commit généré : $commit_title"
-                message="$commit_title"
-                # Ajouter le body si présent
-                if [ -n "$commit_body" ] && [ "$commit_body" != "null" ]; then
-                    message=$(printf "%s\n\n%s" "$commit_title" "$commit_body")
+                # Si on a un message manuel, ne pas essayer d'extraire la réponse OpenRouter
+                if [ "$goto_commit" != "true" ]; then
+                    # Vérifier la réponse brute avant extraction
+                    if [ "$raw_response" = "null" ] || [ -z "$raw_response" ]; then
+                        echo "Erreur: OpenRouter a retourné une réponse nulle ou vide."
+                        echo "Vérifiez votre clé API et le modèle."
+                        echo "Réponse complète: $raw_response"
+                        exit 1
+                    fi
+                    
+                    # Extraire le contenu de la réponse
+                    raw_response=$(echo "$raw_response" | jq -r '.choices[0].message.content')
+                    rm -f "$TMP_JSON"
+                    # Nettoyer les balises ``` et extraire le JSON proprement
+                    clean_response=$(echo "$raw_response" | tr -d '\n' | sed 's/```json//g; s/```//g')
+                    json_commit=$(echo "$clean_response" | sed 's/.*{\(.*\)}.*/{\1}/')
+                    # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
+                    if ! echo "$json_commit" | grep -q '^{.*}$'; then
+                        echo "Erreur: la réponse OpenRouter n'est pas un objet JSON. Réponse brute :"
+                        echo "$raw_response"
+                        exit 1
+                    fi
+                    commit_title=$(echo "$json_commit" | jq -r '.title')
+                    commit_body=$(echo "$json_commit" | jq -r '.body')
+                    
+                    # Nettoyer les \n littéraux dans le titre et le corps
+                    commit_title=$(echo "$commit_title" | sed 's/\\n/\n/g')
+                    if [ "$commit_body" != "null" ]; then
+                        commit_body=$(echo "$commit_body" | sed 's/\\n/\n/g')
+                    fi
+                    
+                    if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
+                        echo "Erreur lors de la génération du message de commit avec OpenRouter. Réponse brute :"
+                        echo "$raw_response"
+                        exit 1
+                    fi
+                    echo "Message de commit généré : $commit_title"
+                    message="$commit_title"
+                    # Ajouter le body si présent
+                    if [ -n "$commit_body" ] && [ "$commit_body" != "null" ]; then
+                        message=$(printf "%s\n\n%s" "$commit_title" "$commit_body")
+                    fi
                 fi
             fi
         fi
