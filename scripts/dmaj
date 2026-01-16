@@ -1,4 +1,4 @@
 docker compose down --rmi local
 git pull
-dc up -d --build
+docker compose up -d --build
 
