@@ -1,0 +1,322 @@
+#!/bin/bash
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "\"Commit helper with auto-message generation via DeepSeek API, options: [-f|--force] [-p|--passtest] [-h|--help]\""
+        exit 0
+    fi
+done
+
+
+if [ -f .env ]; then
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < .env
+fi
+
+if [ -f .env.local ]; then
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < .env.local
+fi
+
+function show_usage() {
+    printf "Usage: $0 [options]\n"
+    printf "\n"
+    printf "Options:\n"
+    printf " -f|--force, Force push\n"
+    printf " -p|--passtest, Pass tests\n"
+    printf " -h|--help, Print help\n"
+    
+    return 0
+}
+
+force=0
+passtest=0
+message=""
+
+# Charger .env.local uniquement depuis ~/debs ou ~/git/debs (jamais local)
+if [ -f "$HOME/debs/.env.local" ]; then
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < "$HOME/debs/.env.local"
+elif [ -f "$HOME/git/debs/.env.local" ]; then
+    while IFS= read -r line; do
+        if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        fi
+    done < "$HOME/git/debs/.env.local"
+fi
+
+# Vérifier si DEEPSEEK_MODEL est défini
+if [ -z "$DEEPSEEK_MODEL" ]; then
+    # Essayer de récupérer DEEPSEEK_MODEL depuis les variables globales
+    if [ -f "$HOME/.bashrc" ]; then
+        source "$HOME/.bashrc" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.profile" ]; then
+        source "$HOME/.profile" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.env" ]; then
+        while IFS= read -r line; do
+            if [[ $line =~ ^DEEPSEEK_MODEL= ]]; then
+                export "$line"
+                echo "DEEPSEEK_MODEL trouvé dans $HOME/.env"
+            fi
+        done < "$HOME/.env" 2>/dev/null || true
+    fi
+    
+    # Si toujours pas de DEEPSEEK_MODEL, utiliser une valeur par défaut
+    if [ -z "$DEEPSEEK_MODEL" ]; then
+        export DEEPSEEK_MODEL="deepseek-chat"
+        echo "DEEPSEEK_MODEL non configuré, utilisation du modèle par défaut: deepseek-chat"
+    fi
+fi
+
+# Parsing des options et récupération du message (premier argument non-option)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --force|-f)
+            force=1
+            shift
+        ;;
+        --passtest|-p)
+            passtest=1
+            shift
+        ;;
+        --help|-h)
+            show_usage
+            exit 0
+        ;;
+        --)
+            shift
+        ;;
+        -* )
+            # Option inconnue, ignorer
+            shift
+        ;;
+        *)
+            # Premier argument non-option = message
+            message="$1"
+            shift
+            break
+        ;;
+    esac
+done
+
+# Si d'autres arguments après, les ignorer (ou les concaténer si tu veux gérer un message sur plusieurs mots)
+if [[ $# -gt 0 && -z "$message" ]]; then
+    message="$*"
+fi
+
+if [ ! -d "tests" ]; then
+    passtest=1
+fi
+
+if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
+    if [ -f bin/phpunit ] && [ $passtest == 0 ]; then
+        echo "Running tests"
+        CURRENT=$(pwd)
+        BASENAME=$(basename "$CURRENT")
+        docker exec -it "$BASENAME" bin/phpunit
+    fi
+    
+    if [ $? -ne 0 ]; then
+        echo "ERREUR DANS LES TESTS ARRET" && exit
+    else
+        git add .
+        
+        # Si pas de message fourni, essayer DeepSeek
+        if [ -z "$message" ]; then
+            # Essayer de récupérer DEEPSEEK_API_KEY depuis les variables globales si pas définie localement
+            if [ -z "$DEEPSEEK_API_KEY" ]; then
+                echo "DEEPSEEK_API_KEY n'est pas configuré localement, recherche dans la configuration globale..."
+                
+                # Charger la configuration globale depuis les fichiers de config
+                if [ -f "$HOME/.bashrc" ]; then
+                    source "$HOME/.bashrc" 2>/dev/null || true
+                fi
+                if [ -f "$HOME/.profile" ]; then
+                    source "$HOME/.profile" 2>/dev/null || true
+                fi
+                if [ -f "$HOME/.env" ]; then
+                    while IFS= read -r line; do
+                        if [[ $line =~ ^DEEPSEEK_API_KEY= ]]; then
+                            export "$line"
+                            echo "DEEPSEEK_API_KEY trouvé dans $HOME/.env"
+                        fi
+                    done < "$HOME/.env" 2>/dev/null || true
+                fi
+                
+                # Vérifier aussi dans les variables d'environnement système
+                if [ -z "$DEEPSEEK_API_KEY" ] && [ -n "$(printenv DEEPSEEK_API_KEY)" ]; then
+                    export DEEPSEEK_API_KEY="$(printenv DEEPSEEK_API_KEY)"
+                    echo "DEEPSEEK_API_KEY trouvé dans les variables d'environnement système"
+                fi
+            fi
+            
+            # Si toujours pas de DEEPSEEK_API_KEY, demander un message manuel
+            if [ -z "$DEEPSEEK_API_KEY" ]; then
+                echo "DeepSeek n'est pas configuré. Veuillez fournir un message de commit :"
+                read -r message
+                if [ -z "$message" ]; then
+                    echo "Aucun message fourni, abandon."
+                    exit 1
+                fi
+            else
+                # Vérifier que la clé API est valide
+                if [[ ! "$DEEPSEEK_API_KEY" =~ ^sk- ]]; then
+                    echo "Erreur: La clé API ne semble pas être une clé DeepSeek valide."
+                    echo "Vérifiez que la variable contient bien votre clé DeepSeek."
+                    echo "Vous pouvez la définir avec: export DEEPSEEK_API_KEY=\"sk-votre-cle-api\""
+                    exit 1
+                fi
+                
+                # Générer le diff
+                DIFF=$(git diff --cached)
+                if [ -z "$DIFF" ]; then
+                    DIFF=$(git diff)
+                fi
+                if [ -z "$DIFF" ]; then
+                    echo "Aucune modification détectée."
+                    exit 1
+                fi
+                # Si beaucoup de suppressions/déplacements, ne donner que le nom du dossier
+                SUPPR_COUNT=$(echo "$DIFF" | grep -E '^delete mode|^rename ' | wc -l)
+                if [ "$SUPPR_COUNT" -gt 10 ]; then
+                    DIRNAME=$(basename "$PWD")
+                    echo "[AVERTISSEMENT] Beaucoup de suppressions/déplacements détectées ($SUPPR_COUNT). Seul le nom du dossier sera envoyé à DeepSeek."
+                    DIFF="Suppression ou déplacement massif dans le répertoire : $DIRNAME"
+                else
+                    # Tronquer le diff si trop volumineux
+                    MAX_DIFF=20000
+                    if [ ${#DIFF} -gt $MAX_DIFF ]; then
+                        echo "[AVERTISSEMENT] Le diff est trop volumineux, il sera tronqué à $MAX_DIFF caractères pour DeepSeek."
+                        DIFF="${DIFF:0:$MAX_DIFF}\n[...diff tronqué...]"
+                    fi
+                fi
+                echo "Génération du commit par DeepSeek..."
+                echo "Modèle utilisé: $DEEPSEEK_MODEL"
+                # Prompt strict pour forcer une réponse JSON et limiter la taille
+                PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
+                # Utiliser un fichier temporaire pour éviter la limite d'arguments
+                TMP_PROMPT=$(mktemp)
+                echo -n "$PROMPT" > "$TMP_PROMPT"
+                TMP_JSON=$(mktemp)
+                # Générer le JSON manuellement pour éviter la limite d'arguments
+                printf '{"model": "'"$DEEPSEEK_MODEL"'", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
+                jq -Rs . < "$TMP_PROMPT" >> "$TMP_JSON"
+                printf '}]}' >> "$TMP_JSON"
+                rm -f "$TMP_PROMPT"
+                if [ ! -s "$TMP_JSON" ]; then
+                    echo "Erreur lors de la préparation du prompt pour DeepSeek (json)."
+                    rm -f "$TMP_JSON"
+                    exit 1
+                fi
+                
+                # Afficher la requête pour debug
+                echo "Envoi de la requête à DeepSeek..."
+                echo "Clé API: ${DEEPSEEK_API_KEY:0:20}..."
+                echo "Modèle: $DEEPSEEK_MODEL"
+                
+                raw_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST https://api.deepseek.com/v1/chat/completions \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+                --data-binary "@${TMP_JSON}")
+                
+                # Extraire le code HTTP
+                HTTP_CODE=$(echo "$raw_response" | tail -n1 | sed 's/HTTP_CODE://')
+                raw_response=$(echo "$raw_response" | head -n -1)
+                
+                # Vérifier le code HTTP
+                if [ "$HTTP_CODE" != "200" ]; then
+                    echo "Erreur HTTP $HTTP_CODE lors de l'appel à DeepSeek."
+                    
+                    # Gérer spécifiquement l'erreur 401 (Unauthorized)
+                    if [ "$HTTP_CODE" == "401" ]; then
+                        error_msg=$(echo "$raw_response" | jq -r '.error.message // "Unknown error"')
+                        echo "Erreur d'authentification: $error_msg"
+                        echo "Vérifiez que votre clé API DeepSeek est valide et active."
+                        echo "Vous pouvez la vérifier sur: https://platform.deepseek.com/api-keys"
+                        echo ""
+                        echo "Veuillez fournir un message de commit :"
+                        read -r message
+                        if [ -z "$message" ]; then
+                            echo "Aucun message fourni, abandon."
+                            exit 1
+                        fi
+                    else
+                        # Gérer les erreurs 500+ et autres - demander directement le message
+                        error_msg=$(echo "$raw_response" | jq -r '.error.message // "Unknown error"')
+                        echo "Erreur serveur: $error_msg"
+                        echo ""
+                        echo "Veuillez fournir un message de commit :"
+                        read -r message
+                        if [ -z "$message" ]; then
+                            echo "Aucun message fourni, abandon."
+                            exit 1
+                        fi
+                        # Sortir de la boucle DeepSeek et utiliser le message manuel
+                        goto_commit=true
+                    fi
+                fi
+                
+                # Si on a un message manuel, ne pas essayer d'extraire la réponse DeepSeek
+                if [ "$goto_commit" != "true" ]; then
+                    # Vérifier la réponse brute avant extraction
+                    if [ "$raw_response" = "null" ] || [ -z "$raw_response" ]; then
+                        echo "Erreur: DeepSeek a retourné une réponse nulle ou vide."
+                        echo "Vérifiez votre clé API et le modèle."
+                        echo "Réponse complète: $raw_response"
+                        exit 1
+                    fi
+                    
+                    # Extraire le contenu de la réponse
+                    raw_response=$(echo "$raw_response" | jq -r '.choices[0].message.content')
+                    rm -f "$TMP_JSON"
+                    # Nettoyer les balises ``` et extraire le JSON proprement
+                    clean_response=$(echo "$raw_response" | tr -d '\n' | sed 's/```json//g; s/```//g')
+                    json_commit=$(echo "$clean_response" | sed 's/.*{\(.*\)}.*/{\1}/')
+                    # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
+                    if ! echo "$json_commit" | grep -q '^{.*}$'; then
+                        echo "Erreur: la réponse DeepSeek n'est pas un objet JSON. Réponse brute :"
+                        echo "$raw_response"
+                        exit 1
+                    fi
+                    commit_title=$(echo "$json_commit" | jq -r '.title')
+                    commit_body=$(echo "$json_commit" | jq -r '.body')
+                    
+                    # Nettoyer les \n littéraux dans le titre et le corps
+                    commit_title=$(echo "$commit_title" | sed 's/\\n/\n/g')
+                    if [ "$commit_body" != "null" ]; then
+                        commit_body=$(echo "$commit_body" | sed 's/\\n/\n/g')
+                    fi
+                    
+                    if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
+                        echo "Erreur lors de la génération du message de commit avec DeepSeek. Réponse brute :"
+                        echo "$raw_response"
+                        exit 1
+                    fi
+                    echo "Message de commit généré : $commit_title"
+                    message="$commit_title"
+                    # Ajouter le body si présent
+                    if [ -n "$commit_body" ] && [ "$commit_body" != "null" ]; then
+                        message=$(printf "%s\n\n%s" "$commit_title" "$commit_body")
+                    fi
+                fi
+            fi
+        fi
+        
+        git commit -m "$message"
+        git submodule foreach "git add . && git commit -m '$message'"
+        git push --all
+        git push --tags
+    fi
+else
+    echo "no modifs ;-)"
+fi
