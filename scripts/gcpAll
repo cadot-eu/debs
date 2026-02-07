@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Couleurs pour l'affichage
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}🔍 Recherche de dépôts Git avec modifications...${NC}\n"
+
+# Fonction pour vérifier si un répertoire est un dépôt git avec des modifications
+check_and_commit() {
+    local dir="$1"
+    
+    # Vérifier si c'est un dépôt git
+    if [ -d "$dir/.git" ]; then
+        cd "$dir" || return
+        
+        # Vérifier s'il y a des modifications
+        if ! git diff-index --quiet HEAD -- 2>/dev/null || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            echo -e "${GREEN}📂 Dépôt trouvé avec modifications: ${dir}${NC}"
+            echo -e "${YELLOW}Status:${NC}"
+            git status --short
+            echo ""
+            
+            # Exécuter gcp
+            echo -e "${YELLOW}🚀 Exécution de gcp...${NC}"
+            if gcp; then
+                echo -e "${GREEN}✅ gcp exécuté avec succès${NC}\n"
+            else
+                echo -e "${RED}❌ Erreur lors de l'exécution de gcp${NC}\n"
+            fi
+            echo "----------------------------------------"
+        fi
+        
+        cd - > /dev/null || return
+    fi
+}
+
+# Exporter la fonction pour l'utiliser avec find
+export -f check_and_commit
+export GREEN YELLOW RED NC
+
+# Parcourir le répertoire courant et tous les sous-répertoires
+find . -type d -name ".git" 2>/dev/null | while read -r gitdir; do
+    repo_dir=$(dirname "$gitdir")
+    check_and_commit "$repo_dir"
+done
+
+echo -e "${GREEN}✨ Recherche terminée!${NC}"
