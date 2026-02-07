@@ -1,11 +1,15 @@
-#!/bin/bash
+vat doit lancer le script git-#!/bin/bash
 # Script: git-add-private
-# Usage: ./git-add-private
+
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Generate SSH key for a private Git repository and clone it. Parameters: <repository-url>"
+        exit 0
+    fi
+done
 
 set -e
-
-
-
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <url-du-repository>"
@@ -55,3 +59,7 @@ else
 fi
 # Clone le repo en SSH avec la clé générée
 GIT_SSH_COMMAND="ssh -i $KEY_PATH" git clone "$SSH_URL"
+
+# Configure Git to use the generated SSH key for this repository
+echo -e "\nConfiguring Git to use the generated SSH key..."
+cd "$REPO_NAME" && git-configs-ssh-key

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Run gcp on all Git repositories with uncommitted changes in current directory and subdirectories. Parameters: none."
+        exit 0
+    fi
+done
+
 # Couleurs pour l'affichage
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

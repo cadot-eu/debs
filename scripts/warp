@@ -1,4 +1,13 @@
 #!/bin/bash
+
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Create temporary user for warp-terminal session. Parameters: <user-number>"
+        exit 0
+    fi
+done
+
 if [ -z "$1" ]; then
     echo "Usage: $0 <num>"
     exit 1

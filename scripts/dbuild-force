@@ -1,3 +1,11 @@
 #!/bin/bash
 
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Force rebuild and recreate Docker containers. Parameters: none."
+        exit 0
+    fi
+done
+
 docker compose up -d --build --force-recreate

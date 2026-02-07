@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Configure Cloudflare DNS and block Proximus DNS for Xubuntu with NetworkManager. Parameters: none."
+        exit 0
+    fi
+done
+
 # Script pour configurer DNS Cloudflare et bloquer Proximus
 # Pour Xubuntu avec NetworkManager
 

@@ -1,3 +1,13 @@
+#!/bin/bash
+
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Update Docker containers: stop, pull git changes, rebuild and restart. Parameters: none."
+        exit 0
+    fi
+done
+
 docker compose down --rmi local
 git pull
 docker compose up -d --build

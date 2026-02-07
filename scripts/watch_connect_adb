@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Connect to Samsung Galaxy Watch via ADB with interactive prompts. Parameters: none."
+        exit 0
+    fi
+done
+
 # Fichier pour sauvegarder les dernières valeurs utilisées
 CONFIG_FILE="$HOME/.adb_watch_config"
 

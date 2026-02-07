@@ -8,7 +8,7 @@ for arg in "$@"; do
     fi
 done
 
-SCRIPTS_DIR="$(dirname "$0")"
+SCRIPTS_DIR="$(dirname "$0")/scripts"
 README="$(pwd)/README.md"
 
 cat > "$README" <<EOF
@@ -43,8 +43,6 @@ for script in "$SCRIPTS_DIR"/*; do
     else
         echo "[WARN] $name ne gère pas l'option -h" 1>&2
         echo "| $name | - | - | - |" >> "$README"
-        rm -f "$README"
-        exit 1
     fi
 done
 

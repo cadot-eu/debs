@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Aide rapide
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Download YouTube videos with subtitles (French preferred, English fallback). Parameters: <url> <filename-without-extension>"
+        exit 0
+    fi
+done
+
 # Si plus de 2 paramètres → URL probablement non entourée de guillemets
 if [ "$#" -gt 2 ]; then
   echo "❌ Trop de paramètres détectés"
