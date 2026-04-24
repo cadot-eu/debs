@@ -27,14 +27,14 @@ echo -e "${BLUE}Recherche des clés SSH dans ~/.ssh...${NC}"
 keys=()
 while IFS= read -r file; do
     # Vérifier si le fichier est une clé privée (sans extension .pub)
-    if [[ -f "$file" && ! "$file" == *.pub && ! "$file" == known_hosts && ! "$file" == config ]]; then
+    if [[ -f "$file" && ! "$file" == *.pub && ! "$file" == known_hosts && ! "$file" == config && ! "$file" == *authorized_keys* ]]; then
         # Lire la première ligne pour vérifier si c'est une clé SSH
-        first_line=$(head -n 1 "$file")
-        if [[ "$first_line" == *"PRIVATE KEY"* ]]; then
+        first_line=$(head -n 1 "$file" 2>/dev/null)
+        if [[ "$first_line" == *"PRIVATE KEY"* ]] || [[ "$first_line" == *"OPENSSH PRIVATE KEY"* ]]; then
             keys+=("$file")
         fi
     fi
-done < <(find ~/.ssh -type f)
+done < <(find ~/.ssh -maxdepth 1 -type f 2>/dev/null)
 
 # Vérifier si des clés ont été trouvées
 if [ ${#keys[@]} -eq 0 ]; then
@@ -44,11 +44,15 @@ fi
 # Afficher les clés disponibles
 echo -e "${BLUE}Clés SSH disponibles:${NC}"
 for i in "${!keys[@]}"; do
-    key_type=$(ssh-keygen -l -f "${keys[$i]}" 2>/dev/null | awk '{print $2}')
-    key_comment=$(ssh-keygen -l -f "${keys[$i]}" 2>/dev/null | awk '{$1=$2=$3=$4=""; print $0}' | sed 's/^ *//')
+    # Extraire le nom du fichier seulement (pas le chemin complet)
+    key_name=$(basename "${keys[$i]}")
     
-    if [ -n "$key_type" ]; then
-        echo -e "$((i+1)). ${GREEN}${keys[$i]}${NC} ($key_type) $key_comment"
+    # Tenter d'obtenir l'empreinte et le commentaire
+    if ssh-keygen -l -f "${keys[$i]}" &>/dev/null; then
+        key_info=$(ssh-keygen -l -f "${keys[$i]}" 2>/dev/null)
+        key_type=$(echo "$key_info" | awk '{print $2}')
+        key_comment=$(echo "$key_info" | awk '{$1=$2=$3=$4=""; print $0}' | sed 's/^ *//')
+        echo -e "$((i+1)). ${GREEN}${keys[$i]}${NC} ($key_type) - $key_comment"
     else
         echo -e "$((i+1)). ${GREEN}${keys[$i]}${NC}"
     fi
@@ -73,10 +77,20 @@ selected_key="${keys[$selection]}"
 echo -e "${BLUE}Clé sélectionnée: ${GREEN}$selected_key${NC}"
 
 # Configurer Git pour utiliser cette clé dans ce dépôt
-git config core.sshCommand "ssh -i $selected_key"
+git config core.sshCommand "ssh -i '$selected_key' -o IdentitiesOnly=yes"
 echo -e "${GREEN}Git configuré pour utiliser la clé: $selected_key${NC}"
 echo -e "${BLUE}Configuration appliquée au dépôt courant uniquement.${NC}"
 
 # Afficher la configuration actuelle pour confirmation
 echo -e "${BLUE}Configuration SSH actuelle pour ce dépôt:${NC}"
 git config --get core.sshCommand
+
+# Tester la connexion (optionnel)
+echo -e "${BLUE}Test de connexion à GitHub...${NC}"
+if ssh -T -o StrictHostKeyChecking=accept-new -i "$selected_key" git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    echo -e "${GREEN}✓ Connexion SSH réussie !${NC}"
+else
+    echo -e "\033[0;33m⚠ Attention: La connexion de test a échoué. Vérifiez que la clé publique est bien ajoutée à GitHub.${NC}"
+fi
+
+echo -e "${GREEN}✓ Configuration terminée ! Vous pouvez maintenant utiliser 'git pull/push' normalement.${NC}"
