@@ -1,2 +1,33 @@
+#!/bin/bash
+
+# Configuration
+START_THRESHOLD=60
+STOP_THRESHOLD=80
+
+echo "=== Lancement fullcharge ==="
 sudo tlp fullcharge BAT0
-watch -n 1 "upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep energy-rate"
+
+echo "=== Surveillance de la charge (appuyez sur Ctrl+C pour arrêter) ==="
+
+# Surveiller la charge jusqu'à 100%
+while true; do
+    # Récupérer le pourcentage de charge
+    CHARGE=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | awk '{print $2}' | cut -d'%' -f1)
+    
+    # Récupérer la puissance (sans l'afficher en continu)
+    POWER=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep energy-rate | awk '{print $2}')
+    
+    # Afficher l'état
+    echo "$(date +%H:%M:%S) - Charge: ${CHARGE}% - Puissance: ${POWER} W"
+    
+    # Vérifier si la charge est à 100%
+    if [ "$CHARGE" -ge 100 ]; then
+        echo "=== Batterie à 100% ! ==="
+        echo "=== Réactivation des seuils ${START_THRESHOLD}/${STOP_THRESHOLD} ==="
+        sudo tlp setcharge ${START_THRESHOLD} ${STOP_THRESHOLD} BAT0
+        echo "=== Fini. Les seuils sont réactivés. ==="
+        break
+    fi
+    
+    sleep 5
+done
