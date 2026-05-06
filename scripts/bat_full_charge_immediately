@@ -1,0 +1,2 @@
+sudo tlp fullcharge BAT0
+watch -n 1 "upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep energy-rate"
