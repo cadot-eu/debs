@@ -1,33 +1,95 @@
 #!/bin/bash
 
+# ============================================================
+# Script: charge-full
+# But: Charge complète la batterie puis restaure les seuils 60/80
+# Auteur: Personnalisé pour ThinkPad X1 Carbon Gen 9
+# ============================================================
+
 # Configuration
 START_THRESHOLD=60
 STOP_THRESHOLD=80
+LOCKFILE="/tmp/charge-full.lock"
 
-echo "=== Lancement fullcharge ==="
+# Vérifier si le script est déjà lancé
+if [ -f "$LOCKFILE" ]; then
+    echo "⚠️  Un autre charge-full est déjà en cours"
+    echo "   Si ce n'est pas le cas, supprimez : sudo rm -f $LOCKFILE"
+    exit 1
+fi
+
+# Créer le verrou
+touch "$LOCKFILE"
+
+# Sauvegarder les seuils actuels
+BACKUP_START=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold 2>/dev/null)
+BACKUP_STOP=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)
+
+# Fonction de nettoyage (restaure TOUJOURS les seuils)
+cleanup() {
+    echo ""
+    echo "🔧 Nettoyage en cours..."
+    sudo tlp setcharge ${START_THRESHOLD} ${STOP_THRESHOLD} BAT0 2>/dev/null
+    rm -f "$LOCKFILE"
+    echo "✅ Seuils restaurés : ${START_THRESHOLD}/${STOP_THRESHOLD}"
+    echo "📁 Verrou supprimé"
+    echo ""
+    exit 0
+}
+
+# Intercepter TOUS les signaux + sortie normale
+trap cleanup INT TERM HUP QUIT EXIT
+
+# Affichage des infos
+clear
+echo "=========================================="
+echo "🔋 Charge complète de la batterie"
+echo "=========================================="
+echo "📊 Seuils sauvegardés : ${BACKUP_START:-?}/${BACKUP_STOP:-?}"
+echo "🎯 Seuils finaux       : ${START_THRESHOLD}/${STOP_THRESHOLD}"
+echo ""
+echo "⚠️  Ce script restaure automatiquement les seuils si vous :"
+echo "   - Appuyez sur Ctrl+C"
+echo "   - Fermez le terminal"
+echo "   - Débranchez l'alimentation"
+echo "   - La charge atteint 100%"
+echo ""
+echo "=========================================="
+echo ""
+
+# Lancer fullcharge
 sudo tlp fullcharge BAT0
 
-echo "=== Surveillance de la charge (appuyez sur Ctrl+C pour arrêter) ==="
-
-# Surveiller la charge jusqu'à 100%
+# Surveillance
 while true; do
-    # Récupérer le pourcentage de charge
-    CHARGE=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | awk '{print $2}' | cut -d'%' -f1)
+    CHARGE=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null | grep percentage | awk '{print $2}' | cut -d'%' -f1)
+    POWER=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null | grep energy-rate | awk '{print $2}')
+    STATUS=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null | grep state | awk '{print $2}')
     
-    # Récupérer la puissance (sans l'afficher en continu)
-    POWER=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep energy-rate | awk '{print $2}')
+    # Si les données sont vides, on attend un peu
+    if [ -z "$CHARGE" ]; then
+        sleep 2
+        continue
+    fi
     
-    # Afficher l'état
-    echo "$(date +%H:%M:%S) - Charge: ${CHARGE}% - Puissance: ${POWER} W"
+    # Affichage compact
+    echo "$(date +%H:%M:%S)  │  ${CHARGE}%  │  ${POWER} W  │  ${STATUS}"
     
-    # Vérifier si la charge est à 100%
+    # Vérifier charge à 100%
     if [ "$CHARGE" -ge 100 ]; then
-        echo "=== Batterie à 100% ! ==="
-        echo "=== Réactivation des seuils ${START_THRESHOLD}/${STOP_THRESHOLD} ==="
-        sudo tlp setcharge ${START_THRESHOLD} ${STOP_THRESHOLD} BAT0
-        echo "=== Fini. Les seuils sont réactivés. ==="
+        echo ""
+        echo "✅ Batterie pleine !"
         break
     fi
     
-    sleep 5
+    # Vérifier débranchement
+    if [ "$STATUS" = "discharging" ]; then
+        echo ""
+        echo "🔌 Alimentation débranchée"
+        break
+    fi
+    
+    sleep 3
 done
+
+# Le trap EXIT appelle automatiquement cleanup
