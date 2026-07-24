@@ -1,0 +1,10 @@
+{
+  "conversationId": "bb0dbbaf-66f9-4587-922d-41e6e8635b36",
+  "activePrompts": [],
+  "fileRegistry": {
+    "/home/michael/git/debs/scripts/gcp": {
+      "mtime": 1784916466232.729,
+      "displayName": "gcp"
+    }
+  }
+}

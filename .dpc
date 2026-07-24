@@ -1,0 +1,10 @@
+{
+  "conversationId": null,
+  "fileRegistry": {
+    "/home/michael/git/debs/scripts/gcp": {
+      "mtime": 1784918386326.687,
+      "displayName": "scripts/gcp"
+    }
+  },
+  "activePrompts": []
+}
