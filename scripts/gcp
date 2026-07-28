@@ -1,7 +1,7 @@
 #!/bin/bash
 for arg in "$@"; do
     if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
-        echo "\"Commit helper with auto-message generation via OpenRouter API, options: [-f|--force] [-p|--passtest] [-h|--help]\""
+        echo "\"Commit helper with auto-message generation via DeepSeek API, options: [-f|--force] [-p|--passtest] [-h|--help]\""
         exit 0
     fi
 done
@@ -53,9 +53,9 @@ elif [ -f "$HOME/git/debs/.env.local" ]; then
     done < "$HOME/git/debs/.env.local"
 fi
 
-# Vérifier si OPENROUTER_MODEL est défini
-if [ -z "$OPENROUTER_MODEL" ]; then
-    # Essayer de récupérer OPENROUTER_MODEL depuis les variables globales
+# Vérifier si DEEPSEEK_MODEL est défini
+if [ -z "$DEEPSEEK_MODEL" ]; then
+    # Essayer de récupérer DEEPSEEK_MODEL depuis les variables globales
     if [ -f "$HOME/.bashrc" ]; then
         source "$HOME/.bashrc" 2>/dev/null || true
     fi
@@ -64,25 +64,17 @@ if [ -z "$OPENROUTER_MODEL" ]; then
     fi
     if [ -f "$HOME/.env" ]; then
         while IFS= read -r line; do
-            if [[ $line =~ ^OPENROUTER_MODEL= ]]; then
+            if [[ $line =~ ^DEEPSEEK_MODEL= ]]; then
                 export "$line"
-                echo "OPENROUTER_MODEL trouvé dans $HOME/.env"
+                echo "DEEPSEEK_MODEL trouvé dans $HOME/.env"
             fi
         done < "$HOME/.env" 2>/dev/null || true
     fi
     
-    # Si toujours pas de OPENROUTER_MODEL, signaler le problème
-    if [ -z "$OPENROUTER_MODEL" ]; then
-        echo "ERREUR: OPENROUTER_MODEL n'est pas configuré."
-        echo "Veuillez définir OPENROUTER_MODEL dans votre ~/.bashrc ou ~/.env"
-        echo "Exemple: export OPENROUTER_MODEL=\"z-ai/glm-4-5-air:free\""
-        echo ""
-        echo "Veuillez fournir un message de commit :"
-        read -r message
-        if [ -z "$message" ]; then
-            echo "Aucun message fourni, abandon."
-            exit 1
-        fi
+    # Si toujours pas de DEEPSEEK_MODEL, utiliser une valeur par défaut
+    if [ -z "$DEEPSEEK_MODEL" ]; then
+        export DEEPSEEK_MODEL="deepseek-chat"
+        echo "DEEPSEEK_MODEL non configuré, utilisation du modèle par défaut: deepseek-chat"
     fi
 fi
 
@@ -139,11 +131,11 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
     else
         git add .
         
-        # Si pas de message fourni, essayer OpenRouter
+        # Si pas de message fourni, essayer DeepSeek
         if [ -z "$message" ]; then
-            # Essayer de récupérer OPENROUTER depuis les variables globales si pas définie localement
-            if [ -z "$OPENROUTER" ]; then
-                echo "OPENROUTER n'est pas configuré localement, recherche dans la configuration globale..."
+            # Essayer de récupérer DEEPSEEK_API_KEY depuis les variables globales si pas définie localement
+            if [ -z "$DEEPSEEK_API_KEY" ]; then
+                echo "DEEPSEEK_API_KEY n'est pas configuré localement, recherche dans la configuration globale..."
                 
                 # Charger la configuration globale depuis les fichiers de config
                 if [ -f "$HOME/.bashrc" ]; then
@@ -154,23 +146,23 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 fi
                 if [ -f "$HOME/.env" ]; then
                     while IFS= read -r line; do
-                        if [[ $line =~ ^OPENROUTER= ]]; then
+                        if [[ $line =~ ^DEEPSEEK_API_KEY= ]]; then
                             export "$line"
-                            echo "OPENROUTER trouvé dans $HOME/.env"
+                            echo "DEEPSEEK_API_KEY trouvé dans $HOME/.env"
                         fi
                     done < "$HOME/.env" 2>/dev/null || true
                 fi
                 
                 # Vérifier aussi dans les variables d'environnement système
-                if [ -z "$OPENROUTER" ] && [ -n "$(printenv OPENROUTER)" ]; then
-                    export OPENROUTER="$(printenv OPENROUTER)"
-                    echo "OPENROUTER trouvé dans les variables d'environnement système"
+                if [ -z "$DEEPSEEK_API_KEY" ] && [ -n "$(printenv DEEPSEEK_API_KEY)" ]; then
+                    export DEEPSEEK_API_KEY="$(printenv DEEPSEEK_API_KEY)"
+                    echo "DEEPSEEK_API_KEY trouvé dans les variables d'environnement système"
                 fi
             fi
             
-            # Si toujours pas de OPENROUTER, demander un message manuel
-            if [ -z "$OPENROUTER" ]; then
-                echo "OpenRouter n'est pas configuré. Veuillez fournir un message de commit :"
+            # Si toujours pas de DEEPSEEK_API_KEY, demander un message manuel
+            if [ -z "$DEEPSEEK_API_KEY" ]; then
+                echo "DeepSeek n'est pas configuré. Veuillez fournir un message de commit :"
                 read -r message
                 if [ -z "$message" ]; then
                     echo "Aucun message fourni, abandon."
@@ -178,10 +170,10 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 fi
             else
                 # Vérifier que la clé API est valide
-                if [[ ! "$OPENROUTER" =~ ^sk-or- ]]; then
-                    echo "Erreur: La clé API ne semble pas être une clé OpenRouter valide."
-                    echo "Vérifiez que la variable contient bien votre clé OpenRouter."
-                    echo "Vous pouvez la définir avec: export OPENROUTER=\"sk-or-votre-cle-api\""
+                if [[ ! "$DEEPSEEK_API_KEY" =~ ^sk- ]]; then
+                    echo "Erreur: La clé API ne semble pas être une clé DeepSeek valide."
+                    echo "Vérifiez que la variable contient bien votre clé DeepSeek."
+                    echo "Vous pouvez la définir avec: export DEEPSEEK_API_KEY=\"sk-votre-cle-api\""
                     exit 1
                 fi
                 
@@ -198,18 +190,18 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 SUPPR_COUNT=$(echo "$DIFF" | grep -E '^delete mode|^rename ' | wc -l)
                 if [ "$SUPPR_COUNT" -gt 10 ]; then
                     DIRNAME=$(basename "$PWD")
-                    echo "[AVERTISSEMENT] Beaucoup de suppressions/déplacements détectées ($SUPPR_COUNT). Seul le nom du dossier sera envoyé à OpenRouter."
+                    echo "[AVERTISSEMENT] Beaucoup de suppressions/déplacements détectées ($SUPPR_COUNT). Seul le nom du dossier sera envoyé à DeepSeek."
                     DIFF="Suppression ou déplacement massif dans le répertoire : $DIRNAME"
                 else
                     # Tronquer le diff si trop volumineux
                     MAX_DIFF=20000
                     if [ ${#DIFF} -gt $MAX_DIFF ]; then
-                        echo "[AVERTISSEMENT] Le diff est trop volumineux, il sera tronqué à $MAX_DIFF caractères pour OpenRouter."
+                        echo "[AVERTISSEMENT] Le diff est trop volumineux, il sera tronqué à $MAX_DIFF caractères pour DeepSeek."
                         DIFF="${DIFF:0:$MAX_DIFF}\n[...diff tronqué...]"
                     fi
                 fi
-                echo "Génération du commit par OpenRouter..."
-                echo "Modèle utilisé: $OPENROUTER_MODEL"
+                echo "Génération du commit par DeepSeek..."
+                echo "Modèle utilisé: $DEEPSEEK_MODEL"
                 # Prompt strict pour forcer une réponse JSON et limiter la taille
                 PROMPT="Donne un commit git au format {\"title\":\"...\",\"body\":\"...\"} pour ce diff (max 100 tokens). Réponds uniquement par un objet JSON, rien d'autre. Diff: $DIFF"
                 # Utiliser un fichier temporaire pour éviter la limite d'arguments
@@ -217,26 +209,24 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 echo -n "$PROMPT" > "$TMP_PROMPT"
                 TMP_JSON=$(mktemp)
                 # Générer le JSON manuellement pour éviter la limite d'arguments
-                printf '{"model": "'"$OPENROUTER_MODEL"'", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
+                printf '{"model": "'"$DEEPSEEK_MODEL"'", "messages": [{"role": "user", "content": ' > "$TMP_JSON"
                 jq -Rs . < "$TMP_PROMPT" >> "$TMP_JSON"
                 printf '}]}' >> "$TMP_JSON"
                 rm -f "$TMP_PROMPT"
                 if [ ! -s "$TMP_JSON" ]; then
-                    echo "Erreur lors de la préparation du prompt pour OpenRouter (json)."
+                    echo "Erreur lors de la préparation du prompt pour DeepSeek (json)."
                     rm -f "$TMP_JSON"
                     exit 1
                 fi
                 
                 # Afficher la requête pour debug
-                echo "Envoi de la requête à OpenRouter..."
-                echo "Clé API: ${OPENROUTER:0:20}..."
-                echo "Modèle: $OPENROUTER_MODEL"
+                echo "Envoi de la requête à DeepSeek..."
+                echo "Clé API: ${DEEPSEEK_API_KEY:0:20}..."
+                echo "Modèle: $DEEPSEEK_MODEL"
                 
-                raw_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST https://openrouter.ai/api/v1/chat/completions \
+                raw_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST https://api.deepseek.com/v1/chat/completions \
                     -H "Content-Type: application/json" \
-                    -H "Authorization: Bearer $OPENROUTER" \
-                    -H "HTTP-Referer: https://github.com/michael/deepseek_bash" \
-                    -H "X-Title: DeepSeek-Bash" \
+                    -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
                 --data-binary "@${TMP_JSON}")
                 
                 # Extraire le code HTTP
@@ -245,14 +235,14 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 
                 # Vérifier le code HTTP
                 if [ "$HTTP_CODE" != "200" ]; then
-                    echo "Erreur HTTP $HTTP_CODE lors de l'appel à OpenRouter."
+                    echo "Erreur HTTP $HTTP_CODE lors de l'appel à DeepSeek."
                     
                     # Gérer spécifiquement l'erreur 401 (Unauthorized)
                     if [ "$HTTP_CODE" == "401" ]; then
                         error_msg=$(echo "$raw_response" | jq -r '.error.message // "Unknown error"')
                         echo "Erreur d'authentification: $error_msg"
-                        echo "Vérifiez que votre clé API OpenRouter est valide et active."
-                        echo "Vous pouvez la vérifier sur: https://openrouter.ai/keys"
+                        echo "Vérifiez que votre clé API DeepSeek est valide et active."
+                        echo "Vous pouvez la vérifier sur: https://platform.deepseek.com/api-keys"
                         echo ""
                         echo "Veuillez fournir un message de commit :"
                         read -r message
@@ -271,16 +261,16 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                             echo "Aucun message fourni, abandon."
                             exit 1
                         fi
-                        # Sortir de la boucle OpenRouter et utiliser le message manuel
+                        # Sortir de la boucle DeepSeek et utiliser le message manuel
                         goto_commit=true
                     fi
                 fi
                 
-                # Si on a un message manuel, ne pas essayer d'extraire la réponse OpenRouter
+                # Si on a un message manuel, ne pas essayer d'extraire la réponse DeepSeek
                 if [ "$goto_commit" != "true" ]; then
                     # Vérifier la réponse brute avant extraction
                     if [ "$raw_response" = "null" ] || [ -z "$raw_response" ]; then
-                        echo "Erreur: OpenRouter a retourné une réponse nulle ou vide."
+                        echo "Erreur: DeepSeek a retourné une réponse nulle ou vide."
                         echo "Vérifiez votre clé API et le modèle."
                         echo "Réponse complète: $raw_response"
                         exit 1
@@ -294,7 +284,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     json_commit=$(echo "$clean_response" | sed 's/.*{\(.*\)}.*/{\1}/')
                     # Vérifier si la réponse est bien un objet JSON (commence par { et finit par })
                     if ! echo "$json_commit" | grep -q '^{.*}$'; then
-                        echo "Erreur: la réponse OpenRouter n'est pas un objet JSON. Réponse brute :"
+                        echo "Erreur: la réponse DeepSeek n'est pas un objet JSON. Réponse brute :"
                         echo "$raw_response"
                         exit 1
                     fi
@@ -308,7 +298,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     fi
                     
                     if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
-                        echo "Erreur lors de la génération du message de commit avec OpenRouter. Réponse brute :"
+                        echo "Erreur lors de la génération du message de commit avec DeepSeek. Réponse brute :"
                         echo "$raw_response"
                         exit 1
                     fi
