@@ -30,7 +30,7 @@ function show_usage() {
     printf " -f|--force, Force push\n"
     printf " -p|--passtest, Pass tests\n"
     printf " -h|--help, Print help\n"
-    
+
     return 0
 }
 
@@ -70,11 +70,11 @@ if [ -z "$DEEPSEEK_MODEL" ]; then
             fi
         done < "$HOME/.env" 2>/dev/null || true
     fi
-    
+
     # Si toujours pas de DEEPSEEK_MODEL, utiliser une valeur par défaut
     if [ -z "$DEEPSEEK_MODEL" ]; then
-        export DEEPSEEK_MODEL="deepseek-chat"
-        echo "DEEPSEEK_MODEL non configuré, utilisation du modèle par défaut: deepseek-chat"
+        export DEEPSEEK_MODEL="deepseek-v4-flash"
+        echo "DEEPSEEK_MODEL non configuré, utilisation du modèle par défaut: deepseek-v4-flash"
     fi
 fi
 
@@ -123,20 +123,20 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
         echo "Running tests"
         CURRENT=$(pwd)
         BASENAME=$(basename "$CURRENT")
-        docker exec -it "$BASENAME" bin/phpunit
+        docker exec -i "$BASENAME" bin/phpunit
     fi
-    
+
     if [ $? -ne 0 ]; then
         echo "ERREUR DANS LES TESTS ARRET" && exit
     else
         git add .
-        
+
         # Si pas de message fourni, essayer DeepSeek
         if [ -z "$message" ]; then
             # Essayer de récupérer DEEPSEEK_API_KEY depuis les variables globales si pas définie localement
             if [ -z "$DEEPSEEK_API_KEY" ]; then
                 echo "DEEPSEEK_API_KEY n'est pas configuré localement, recherche dans la configuration globale..."
-                
+
                 # Charger la configuration globale depuis les fichiers de config
                 if [ -f "$HOME/.bashrc" ]; then
                     source "$HOME/.bashrc" 2>/dev/null || true
@@ -152,14 +152,14 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                         fi
                     done < "$HOME/.env" 2>/dev/null || true
                 fi
-                
+
                 # Vérifier aussi dans les variables d'environnement système
                 if [ -z "$DEEPSEEK_API_KEY" ] && [ -n "$(printenv DEEPSEEK_API_KEY)" ]; then
                     export DEEPSEEK_API_KEY="$(printenv DEEPSEEK_API_KEY)"
                     echo "DEEPSEEK_API_KEY trouvé dans les variables d'environnement système"
                 fi
             fi
-            
+
             # Si toujours pas de DEEPSEEK_API_KEY, demander un message manuel
             if [ -z "$DEEPSEEK_API_KEY" ]; then
                 echo "DeepSeek n'est pas configuré. Veuillez fournir un message de commit :"
@@ -176,7 +176,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     echo "Vous pouvez la définir avec: export DEEPSEEK_API_KEY=\"sk-votre-cle-api\""
                     exit 1
                 fi
-                
+
                 # Générer le diff
                 DIFF=$(git diff --cached)
                 if [ -z "$DIFF" ]; then
@@ -218,25 +218,25 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     rm -f "$TMP_JSON"
                     exit 1
                 fi
-                
+
                 # Afficher la requête pour debug
                 echo "Envoi de la requête à DeepSeek..."
                 echo "Clé API: ${DEEPSEEK_API_KEY:0:20}..."
                 echo "Modèle: $DEEPSEEK_MODEL"
-                
+
                 raw_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST https://api.deepseek.com/v1/chat/completions \
                     -H "Content-Type: application/json" \
                     -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
                 --data-binary "@${TMP_JSON}")
-                
+
                 # Extraire le code HTTP
                 HTTP_CODE=$(echo "$raw_response" | tail -n1 | sed 's/HTTP_CODE://')
                 raw_response=$(echo "$raw_response" | head -n -1)
-                
+
                 # Vérifier le code HTTP
                 if [ "$HTTP_CODE" != "200" ]; then
                     echo "Erreur HTTP $HTTP_CODE lors de l'appel à DeepSeek."
-                    
+
                     # Gérer spécifiquement l'erreur 401 (Unauthorized)
                     if [ "$HTTP_CODE" == "401" ]; then
                         error_msg=$(echo "$raw_response" | jq -r '.error.message // "Unknown error"')
@@ -265,7 +265,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                         goto_commit=true
                     fi
                 fi
-                
+
                 # Si on a un message manuel, ne pas essayer d'extraire la réponse DeepSeek
                 if [ "$goto_commit" != "true" ]; then
                     # Vérifier la réponse brute avant extraction
@@ -275,7 +275,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                         echo "Réponse complète: $raw_response"
                         exit 1
                     fi
-                    
+
                     # Extraire le contenu de la réponse
                     raw_response=$(echo "$raw_response" | jq -r '.choices[0].message.content')
                     rm -f "$TMP_JSON"
@@ -290,13 +290,13 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                     fi
                     commit_title=$(echo "$json_commit" | jq -r '.title')
                     commit_body=$(echo "$json_commit" | jq -r '.body')
-                    
+
                     # Nettoyer les \n littéraux dans le titre et le corps
                     commit_title=$(echo "$commit_title" | sed 's/\\n/\n/g')
                     if [ "$commit_body" != "null" ]; then
                         commit_body=$(echo "$commit_body" | sed 's/\\n/\n/g')
                     fi
-                    
+
                     if [ -z "$commit_title" ] || [ "$commit_title" == "null" ]; then
                         echo "Erreur lors de la génération du message de commit avec DeepSeek. Réponse brute :"
                         echo "$raw_response"
@@ -311,7 +311,7 @@ if [[ $(git status --porcelain) ]] || [ $force == 1 ]; then
                 fi
             fi
         fi
-        
+
         git commit -m "$message"
         git submodule foreach "git add . && git commit -m '$message'"
         git push --all
