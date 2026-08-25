@@ -24,12 +24,6 @@ if [ ! -f "$CHEMIN_COMPLET" ]; then
 fi
 
 echo "🎵 Morceau en cours : $FICHIER"
-read -p "⚠️  Confirmer la suppression définitive ? (o/N) : " confirm
-
-if [[ ! "$confirm" =~ ^[oOyY]$ ]]; then
-    echo "❌ Annulé."
-    exit 0
-fi
 
 # Passer au morceau suivant avant de supprimer le fichier actuellement lu
 mpc next >/dev/null
