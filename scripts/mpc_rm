@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Dossier racine de la musique côté hôte (à adapter si besoin)
-MUSIC_DIR="~/music}"
+MUSIC_DIR="${MPD_MUSIC_DIR:-$HOME/mpd-docker/music}"
 
 # Récupérer le chemin relatif du fichier en cours de lecture
 FICHIER=$(mpc --format "%file%" current)
