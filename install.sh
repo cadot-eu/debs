@@ -155,17 +155,5 @@ else
     echo "OPENROUTER_MODEL existe déjà dans $SHELL_RC"
 fi
 
-echo ""
-echo "IMPORTANT : Vous devez modifier ces valeurs dans $SHELL_RC :"
-echo "- Remplacez 'sk-or-votre-clé-api-openrouter' par votre vraie clé API OpenRouter"
-echo "- Vous pouvez changer le modèle si vous le souhaitez"
-echo ""
-echo "Exemple de configuration :"
-echo "export OPENROUTER=\"sk-or-votre-clé-api-ici\""
-echo "export OPENROUTER_MODEL=\"z-ai/glm-4-5-air:free\""
-echo ""
-echo "Après modification, exécutez : source $SHELL_RC"
-echo ""
-
 # Recharger le shell pour prendre en compte les nouvelles variables
 source "$SHELL_RC"

@@ -1,0 +1,43 @@
+#!/bin/bash
+# ============================================================
+# mpcrm - Supprime physiquement le fichier audio en cours de lecture dans MPD
+# Usage : ./mpcrm.sh
+# ============================================================
+set -euo pipefail
+
+# Dossier racine de la musique côté hôte (à adapter si besoin)
+MUSIC_DIR="${MPD_MUSIC_DIR:-$HOME/mpd-docker/music}"
+
+# Récupérer le chemin relatif du fichier en cours de lecture
+FICHIER=$(mpc --format "%file%" current)
+
+if [ -z "$FICHIER" ]; then
+    echo "❌ Aucun morceau en cours de lecture."
+    exit 1
+fi
+
+CHEMIN_COMPLET="$MUSIC_DIR/$FICHIER"
+
+if [ ! -f "$CHEMIN_COMPLET" ]; then
+    echo "❌ Fichier introuvable sur disque : $CHEMIN_COMPLET"
+    exit 1
+fi
+
+echo "🎵 Morceau en cours : $FICHIER"
+read -p "⚠️  Confirmer la suppression définitive ? (o/N) : " confirm
+
+if [[ ! "$confirm" =~ ^[oOyY]$ ]]; then
+    echo "❌ Annulé."
+    exit 0
+fi
+
+# Passer au morceau suivant avant de supprimer le fichier actuellement lu
+mpc next >/dev/null
+
+# Suppression physique
+rm -f "$CHEMIN_COMPLET"
+echo "🗑️  Fichier supprimé : $CHEMIN_COMPLET"
+
+# Rafraîchir la base MPD pour retirer la référence
+mpc update >/dev/null
+echo "✅ Base MPD mise à jour."

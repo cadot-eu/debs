@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# lbash - Entre dans le container workspace Laradock, positionné
+#         dans le dossier du projet.
+#
+# Usage :
+#   cd ~/laradock/sites/pods && lbash   # utilise le dossier courant
+#   lbash pods                          # va direct dans sites/pods, peu importe où tu es
+#
+# Installation :
+#   cp lbash ~/bin/lbash   (ou tout autre dossier dans ton $PATH)
+#   chmod +x ~/bin/lbash
+
+set -euo pipefail
+
+LARADOCK_DIR="$HOME/laradock"
+
+if [[ $# -ge 1 ]]; then
+    # Un nom de projet a été passé en argument : lbash pods
+    RELATIVE_PATH="$1"
+else
+    # Pas d'argument : déduit le projet du dossier courant
+    CURRENT_DIR="$PWD"
+
+    if [[ "$CURRENT_DIR" != "$LARADOCK_DIR/sites/"* ]]; then
+        echo "Erreur : lance depuis $LARADOCK_DIR/sites/<projet>, ou utilise 'lbash <projet>'" >&2
+        exit 1
+    fi
+
+    RELATIVE_PATH="${CURRENT_DIR#"$LARADOCK_DIR"/sites/}"
+fi
+
+cd "$LARADOCK_DIR"
+
+# Démarre workspace s'il n'est pas déjà up
+if ! docker compose ps workspace --status running | grep -q workspace; then
+    echo "Démarrage du workspace..."
+    docker compose up -d workspace
+fi
+
+# Entre dans le container en tant que laradock (UID/GID = ton user hôte),
+# pas en root, sinon les fichiers créés dedans appartiennent à root côté hôte.
+docker compose exec -u laradock -w "/var/www/$RELATIVE_PATH" workspace bash

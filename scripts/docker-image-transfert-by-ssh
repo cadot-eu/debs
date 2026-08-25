@@ -1,0 +1,134 @@
+#!/bin/bash
+# ============================================================
+# Transfert, chargement et déploiement automatique
+# Usage : ./transfert_and_deploy.sh user@host [nom_image:tag]
+# Le $HOME de l'utilisateur distant est toujours utilisé comme destination.
+# Si le nom de l'image n'est pas fourni, un menu interactif s'affiche.
+# ============================================================
+set -euo pipefail
+
+usage() {
+    cat << EOF
+Usage: $0 user@host [nom_image:tag]
+Exemples :
+  $0 debian@94.23.249.96
+  $0 debian@94.23.249.96 mon-app:latest
+EOF
+    exit 0
+}
+
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+    echo "❌ Fournissez user@host [nom_image:tag]"
+    usage
+fi
+
+SSH_TARGET="$1"
+IMAGE_ARG="${2:-}"
+
+# Extraction : uniquement user@host, plus de chemin
+if [[ "$SSH_TARGET" =~ ^([^@]+)@([^:]+)$ ]]; then
+    SSH_USER="${BASH_REMATCH[1]}"
+    SSH_HOST="${BASH_REMATCH[2]}"
+else
+    echo "❌ Format invalide. Utilisez user@host"
+    exit 1
+fi
+
+# Vérification SSH
+echo "🔍 Connexion à $SSH_USER@$SSH_HOST..."
+if ! ssh -q -o BatchMode=yes -o ConnectTimeout=5 "$SSH_USER@$SSH_HOST" "exit" 2>/dev/null; then
+    echo "❌ Impossible de se connecter. Vérifiez vos clés/mot de passe."
+    exit 1
+fi
+
+# Le chemin distant est toujours le $HOME de l'utilisateur
+PROJECT_PATH=$(ssh "$SSH_USER@$SSH_HOST" 'echo $HOME')
+echo "ℹ️  Destination : $PROJECT_PATH"
+
+# ------------------------------------------------------------
+# Sélection de l'image : soit fournie en 2e paramètre, soit menu interactif
+# ------------------------------------------------------------
+if [ -n "$IMAGE_ARG" ]; then
+    # Vérifier que l'image existe bien localement
+    if ! docker image inspect "$IMAGE_ARG" >/dev/null 2>&1; then
+        echo "❌ Image locale introuvable : $IMAGE_ARG"
+        exit 1
+    fi
+    repo_tag="$IMAGE_ARG"
+    echo "📦 Image sélectionnée : $repo_tag"
+else
+    echo "🔍 Images disponibles localement :"
+    mapfile -t images < <(
+        docker images --format "{{.Repository}}:{{.Tag}}|{{.CreatedAt}}|{{.Size}}" | \
+        sort -r -t'|' -k2
+    )
+
+    if [ ${#images[@]} -eq 0 ]; then
+        echo "❌ Aucune image Docker trouvée localement."
+        exit 1
+    fi
+
+    for i in "${!images[@]}"; do
+        IFS='|' read -r repo_tag created_at size <<< "${images[$i]}"
+        date_clean=$(echo "$created_at" | cut -d' ' -f1)
+        echo "$((i+1))) $repo_tag  (créée $date_clean, taille $size)"
+    done
+
+    echo ""
+    read -p "Choisissez l'image à transférer (numéro) : " selection
+    if [[ ! "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt ${#images[@]} ]; then
+        echo "❌ Numéro invalide"
+        exit 1
+    fi
+
+    idx=$((selection-1))
+    IFS='|' read -r repo_tag _ _ <<< "${images[$idx]}"
+fi
+
+safe_name=$(echo "$repo_tag" | tr '/:' '_')
+tar_file="${safe_name}.tar"
+
+# ------------------------------------------------------------
+# Sauvegarde et transfert
+# ------------------------------------------------------------
+echo "📦 Sauvegarde de $repo_tag..."
+docker save -o "$tar_file" "$repo_tag"
+
+echo "📤 Transfert vers $SSH_USER@$SSH_HOST:$PROJECT_PATH"
+scp "$tar_file" "$SSH_USER@$SSH_HOST:$PROJECT_PATH/"
+
+# ------------------------------------------------------------
+# Chargement sur le serveur, suppression du .tar et lancement
+# ------------------------------------------------------------
+echo "⏳ Chargement de l'image sur le serveur..."
+ssh "$SSH_USER@$SSH_HOST" << EOF
+    cd "$PROJECT_PATH"
+
+    # Charger l'image dans Docker
+    echo "📥 Chargement de l'image..."
+    docker load -i "$tar_file"
+
+    # Supprimer le fichier .tar après chargement
+    echo "🗑️  Suppression du fichier $tar_file..."
+    rm -f "$tar_file"
+
+    # Vérifier que l'image est chargée
+    echo "✅ Image chargée avec succès :"
+    docker images | grep -E "$(echo "$repo_tag" | cut -d: -f1)"
+
+    # Optionnel : lancer le conteneur avec docker-compose
+    if [ -f "docker-compose.yml" ]; then
+        echo "🚀 Lancement de docker-compose..."
+        docker-compose down 2>/dev/null || true
+        docker-compose up -d
+    else
+        echo "ℹ️  Aucun docker-compose.yml trouvé. Lancement manuel :"
+        echo "   docker run -d -p 80:80 --name mon-app $repo_tag"
+    fi
+EOF
+
+# Supprimer le fichier .tar local
+rm -f "$tar_file"
+
+echo "🎉 Déploiement terminé avec succès !"
+echo "📡 Application disponible sur http://$SSH_HOST"
