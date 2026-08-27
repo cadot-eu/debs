@@ -14,18 +14,16 @@ force=0
 passtest=0
 message=""
 
-# Parse options
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -f|--force) force=1; shift ;;
         -p|--passtest) passtest=1; shift ;;
         -h|--help) show_usage; exit 0 ;;
         --) shift ;;
-        -*) shift ;; # ignore unknown options
+        -*) shift ;;
         *)
             message="$1"
             shift
-            # If more arguments, treat as part of the message
             if [[ $# -gt 0 ]]; then
                 message="$message $*"
                 shift $#
@@ -34,25 +32,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if DEEPSEEK_API_KEY is set if we might need it
-if [ -z "$message" ] && [ -z "$DEEPSEEK_API_KEY" ]; then
+if [ -z "$DEEPSEEK_API_KEY" ] && [ -z "$message" ]; then
     echo "Error: DEEPSEEK_API_KEY is not set in the environment."
     echo "Please export it or provide a commit message manually."
     exit 1
 fi
 
-# Default model if not set
-if [ -z "$DEEPSEEK_MODEL" ]; then
-    export DEEPSEEK_MODEL="deepseek-v4-flash"
-fi
+[ -z "$DEEPSEEK_MODEL" ] && export DEEPSEEK_MODEL="deepseek-v4-flash"
 
-# Check for changes
 if [[ ! $(git status --porcelain) && $force -ne 1 ]]; then
     echo "No changes to commit."
     exit 0
 fi
 
-# Run tests if requested and phpunit exists
 if [ -f bin/phpunit ] && [ $passtest -eq 0 ]; then
     echo "Running tests..."
     CURRENT=$(pwd)
@@ -64,61 +56,53 @@ if [ -f bin/phpunit ] && [ $passtest -eq 0 ]; then
     fi
 fi
 
-# Stage all changes
 git add .
 
-# Generate commit message if not provided
 if [ -z "$message" ]; then
     echo "Generating commit message using DeepSeek..."
-    
+
     DIFF=$(git diff --cached)
-    if [ -z "$DIFF" ]; then
-        DIFF=$(git diff)
-    fi
+    [ -z "$DIFF" ] && DIFF=$(git diff)
     if [ -z "$DIFF" ]; then
         echo "No changes detected after staging."
         exit 1
     fi
-    
-    # Truncate diff if too large
+
     MAX_DIFF=20000
     if [ ${#DIFF} -gt $MAX_DIFF ]; then
         echo "Diff truncated to $MAX_DIFF characters."
         DIFF="${DIFF:0:$MAX_DIFF}\n[...truncated...]"
     fi
-    
+
     PROMPT="Give a git commit message as JSON: {\"title\":\"...\",\"body\":\"...\"} (max 100 tokens) for this diff: $DIFF"
-    
-    # Build JSON payload
+
     JSON_PAYLOAD=$(jq -n \
         --arg model "$DEEPSEEK_MODEL" \
         --arg prompt "$PROMPT" \
         '{model: $model, messages: [{role: "user", content: $prompt}]}')
-    
+
     RESPONSE=$(curl -s -X POST https://api.deepseek.com/v1/chat/completions \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
         -d "$JSON_PAYLOAD")
-    
-    # Extract content
+
     RAW=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
     if [ -z "$RAW" ] || [ "$RAW" = "null" ]; then
         echo "Error: DeepSeek returned an empty response."
         echo "Response: $RESPONSE"
         exit 1
     fi
-    
-    # Clean and extract JSON
+
     CLEAN=$(echo "$RAW" | tr -d '\n' | sed 's/```json//g; s/```//g')
     TITLE=$(echo "$CLEAN" | jq -r '.title')
     BODY=$(echo "$CLEAN" | jq -r '.body')
-    
+
     if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
         echo "Error: Could not extract title from DeepSeek response."
         echo "Raw: $RAW"
         exit 1
     fi
-    
+
     message="$TITLE"
     if [ -n "$BODY" ] && [ "$BODY" != "null" ]; then
         message=$(printf "%s\n\n%s" "$TITLE" "$BODY")
@@ -126,10 +110,15 @@ if [ -z "$message" ]; then
     echo "Generated message: $message"
 fi
 
-# Commit and push
 git commit -m "$message"
 git submodule foreach "git add . && git commit -m '$message'"
-git push --all
-git push --tags
+
+# Vérifier la présence d'un remote avant de pousser
+if git remote -v | grep -q fetch; then
+    git push --all
+    git push --tags
+else
+    echo "Warning: No remote configured. Skipping push."
+fi
 
 exit 0
