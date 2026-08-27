@@ -116,15 +116,6 @@ ssh "$SSH_USER@$SSH_HOST" << EOF
     echo "✅ Image chargée avec succès :"
     docker images | grep -E "$(echo "$repo_tag" | cut -d: -f1)"
 
-    # Optionnel : lancer le conteneur avec docker-compose
-    if [ -f "docker-compose.yml" ]; then
-        echo "🚀 Lancement de docker-compose..."
-        docker-compose down 2>/dev/null || true
-        docker-compose up -d
-    else
-        echo "ℹ️  Aucun docker-compose.yml trouvé. Lancement manuel :"
-        echo "   docker run -d -p 80:80 --name mon-app $repo_tag"
-    fi
 EOF
 
 # Supprimer le fichier .tar local
