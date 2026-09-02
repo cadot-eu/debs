@@ -20,23 +20,18 @@ pull_repo() {
 
         # Récupérer la branche courante
         branch=$(git branch --show-current)
-        if [ -z "$branch" ]; then
-            echo -e "${RED}⚠️  Pas de branche courante (detached HEAD ?), ignoré${NC}"
-            echo "----------------------------------------"
-            cd - > /dev/null || return
-            return
-        fi
         echo -e "${YELLOW}Branche: ${branch}${NC}"
 
-        # Informer seulement, sans bloquer le pull
-        if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-            echo -e "${YELLOW}ℹ️  Modifications locales détectées (stashées puis réappliquées) :${NC}"
+        # Vérifier s'il y a des modifications locales non commitées
+        if ! git diff-index --quiet HEAD -- 2>/dev/null || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            echo -e "${YELLOW}ℹ️  Modifications locales détectées${NC}"
             git status --short
+            echo ""
         fi
 
-        # Exécuter git pull avec autostash
-        echo -e "${YELLOW}🔄 Exécution de git pull --autostash...${NC}"
-        if git pull --autostash; then
+        # Exécuter git pull
+        echo -e "${YELLOW}🔄 Exécution de git pull...${NC}"
+        if git pull; then
             echo -e "${GREEN}✅ git pull réussi${NC}\n"
         else
             echo -e "${RED}❌ Erreur lors du git pull${NC}\n"
