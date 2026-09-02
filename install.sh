@@ -125,9 +125,6 @@ esac
 
 echo "Tous les scripts ont été installés dans $TARGET_DIR."
 
-# Configure les variables d'environnement pour OpenRouter
-echo ""
-echo "Configuration des variables d'environnement pour OpenRouter..."
 
 # Déterminer le fichier de configuration du shell
 if [ -n "$ZSH_VERSION" ]; then
@@ -136,24 +133,6 @@ else
     SHELL_RC="$HOME/.bashrc"
 fi
 
-# Vérifier si les variables existent déjà
-OPENROUTER_EXISTS=$(grep -c "^export OPENROUTER=" "$SHELL_RC" 2>/dev/null || echo "0")
-OPENROUTER_MODEL_EXISTS=$(grep -c "^export OPENROUTER_MODEL=" "$SHELL_RC" 2>/dev/null || echo "0")
-
-# Ajouter les variables si elles n'existent pas
-if [ "$OPENROUTER_EXISTS" = "0" ]; then
-    echo "export OPENROUTER=\"sk-or-votre-clé-api-openrouter\"" >> "$SHELL_RC"
-    echo "Ajout de OPENROUTER dans $SHELL_RC"
-else
-    echo "OPENROUTER existe déjà dans $SHELL_RC"
-fi
-
-if [ "$OPENROUTER_MODEL_EXISTS" = "0" ]; then
-    echo "export OPENROUTER_MODEL=\"z-ai/glm-4-5-air:free\"" >> "$SHELL_RC"
-    echo "Ajout de OPENROUTER_MODEL dans $SHELL_RC"
-else
-    echo "OPENROUTER_MODEL existe déjà dans $SHELL_RC"
-fi
 
 # Recharger le shell pour prendre en compte les nouvelles variables
 source "$SHELL_RC"
