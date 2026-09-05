@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# d.sh - Téléchargement de playlist ou vidéo YouTube en MP3
+# Usage: ./d.sh URL
+
+URL="$1"
+
+yt-dlp -f bestaudio \
+       --extract-audio \
+       --audio-format mp3 \
+       --audio-quality 0 \
+       --add-metadata \
+       -o "./%(playlist_title)s/%(title)s.%(ext)s" \
+       "$URL"
